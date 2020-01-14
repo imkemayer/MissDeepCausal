@@ -26,55 +26,32 @@ Structure:
 |                and for d_miwae (dimension of latent space)
 |
 |  estimators.py
-|    - tau_mi: ATE estimation via multiple imputation
-|    - tau_mia: ATE estimation via mia.grf (not implemented)
-|    - tau_grf: ATE estimation via mean.grf (not implemented)
-|    - get_ps_y01_hat: estimate propensity score and regression functions using logistic and linear regression
-|    - tau_residuals: ATE estimation via residuals on residuals regression (using output of get_ps_y01_hat)
+|    Main functions
 |    - tau_dr: ATE estimation via parametric AIPW (using output of get_ps_y01_hat)
 |    - tau_ols: ATE estimation via regression of Y on W and (covariates or confounders) 
 |    - tau_ols_ps: ATE estimation via regression of Y on W and (covariates or confounders) and PS
 |                  (using PS estimation from get_ps_y01_hat)
+|    - tau_residuals: ATE estimation via residuals on residuals regression (using output of get_ps_y01_hat)
+|    Helper functions
+|    - get_ps_y01_hat: estimate propensity score and regression functions using logistic and linear regression
+|    
 |
 |  main.py
-|    - exp_complete: ATE estimation on complete data (X or Z) with synthetic data
-|    - exp_mi: ATE estimation via multiple imputation with synthetic data
-|    - exp_cevae: ATE estimation via CEVAE on mean imputation with synthetic data
-|    - exp_miwae: ATE estimation via MIWAE with synthetic data
-|
-|  main_ihdp.py
-|    - ihdp_baseline: ATE estimation on complete data (X or Z) with IHDP data
-|    - ihdp_mi: ATE estimation via multiple imputation with IHDP data
-|    - ihdp_cevae: ATE estimation via CEVAE on mean imputation with IHDP data
-|    - ihdp_miwae_save: save output of MIWAE (E[Z|X] and B samples from P(Z|X)) with IHDP data
-|    - ihdp_miwae: ATE estimation via MIWAE with IHDP data
-|    - ihdp_miwae_cv: call miwae_cv function on IHDP data
+|    - exp_complete: ATE estimation on complete data (X or Z) using estimators from estimators.py
+|    - exp_mean: ATE estimation on mean-imputed data using estimators from estimators.py
+|    - exp_mf: ATE estimation on approximate latent factors obtained with SoftImpute using estimators from estimators.py
+|    - exp_mi: ATE estimation via multiple imputation using estimators from estimators.py
+|    - exp_mdc: ATE estimation via MDC (process and mi) using estimators from estimators.py
+
 
 
 ./experiments
-|  exp_template.py: template for calling exp_miwae function with different sets of parameters 
+|  exp_template.py: template for calling all functions of main.py on data generated with different sets of parameters 
 |                   (for data generation and for miwae)
-|  exp_mi.py: calling exp_mi function with different sets of data generation parameters
-|  exp_cevae.py: calling exp_cevae function with different sets of data generation parameters
-|  exp_imke_*: additional calls of exp_miwae with more parameter configurations
-|  ihdp_miwae_*.py: calling ihdp_miwae function with different sets of parameters
-|                   (for missing data generation and for miwae)
-|  ihdp_mi.py
-|  ihdp_cevae.py
 
-./plots
-|
-|
-
-./R
-|
-|
-
-./sandbox
-|
-|
 ```
 
+####################################################################################
 
 ### Running exp:  
 $ screen -S exp_7
@@ -88,17 +65,6 @@ $ taskset -c 0-23 nice -5 python exp_expname.py
 ```bash
 $ scp tschmitt@drago:/home/tao/tschmitt/miss-vae/results/expname.csv /home/thomas/Documents/miss-vae/results
 ```
-
-
-### Running cevae model :  
-
-```bash
-conda config --append channels anaconda 
-conda config --append channels conda-forge
-conda create -n cevae_env python numpy pandas joblib scikit-learn==0.18.1  tensorflow==1.1.0 progressbar==2.3 pip scipy 
-conda activate cevae_env
-pip install edward==1.3.1 --user
-
 taskset -c 0-23 nice -5 python2 exp_cevae_name.py
 ```
 
