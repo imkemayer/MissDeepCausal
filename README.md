@@ -50,26 +50,3 @@ Structure:
 |                   (for data generation and for miwae)
 
 ```
-
-####################################################################################
-
-### Running exp:  
-$ screen -S exp_7
-
-reserve cpu nb 0 to 23 and set the niceness (for server):
-$ taskset -c 0-23 nice -5 python exp_expname.py
-
-
-### get back the results by scp:
-
-```bash
-$ scp tschmitt@drago:/home/tao/tschmitt/miss-vae/results/expname.csv /home/thomas/Documents/miss-vae/results
-```
-taskset -c 0-23 nice -5 python2 exp_cevae_name.py
-```
-
-#### Other issues:
-pip3 issues, had to re-install : 
-$ curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-$ python3 get-pip.py --force-reinstall
-
