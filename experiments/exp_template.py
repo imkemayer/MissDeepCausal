@@ -12,7 +12,7 @@ range_citcio = [False, True] # classical unconfoundedness (on Z) or unconfounded
 range_n = [1000, 5000, 10000, 20000] # number of observations
 range_p = [10, 50, 100, 200] # dimension of ambient space
 range_d_over_p = [0.3, 0.6, 0.9] # ratio d over p
-range_sd = [0.1, 1, 5] # additive noise in outcome generation (y0, y1)
+range_sd = [0.1, 0.5, 1, 2] # additive noise in outcome generation (y0, y1)
 range_prop_miss = [0, 0.1, 0.3, 0.5, 0.7, 0.9] # proportion of MCAR missing values
 range_seed = np.arange(100) # to replicate 100 times each experiment
 
@@ -35,7 +35,7 @@ output = '../results/'+exp_name+'.csv'
 ## Method parameters
 l_method_params = ['m','r', 'd_miwae', 'sig_prior', 
                    'num_samples_zmul', 'learning_rate', 
-                   'n_epochs']
+                   'n_epochs', 'elbo']
 ## ATE estimator names
 l_tau = ['tau_dr', 'tau_ols', 'tau_ols_ps', 'tau_resid']
 
