@@ -1,5 +1,17 @@
 # from https://github.com/iskandr/fancyimpute
 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import numpy as np
 from sklearn.utils.extmath import randomized_svd
 from sklearn.utils import check_array
@@ -7,10 +19,6 @@ from sklearn.utils import check_array
 import warnings
 
 F32PREC = np.finfo(np.float32).eps
-
-
-#from joblib import Memory
-#memory = Memory('cache_dir', verbose=0)
 
 
 def soft_impute_rank(X_obs, n_folds = 5, max_rank = 10):
@@ -55,7 +63,6 @@ def get_U_softimpute(X_obs, list_rank=None, boxplot=False, n_folds=3):
             U, l_mae = soft_impute_rank(X_obs, n_folds = n_folds, max_rank = max_rank)
             ll_mae.append(l_mae)
             
-            # print(' -get_U_softimpute, rank={}, mae={} + {}'.format(max_rank, np.round(np.mean(l_mae),4), np.round(np.std(l_mae),4)))
             if np.mean(l_mae) < best_mae:
                 best_mae = np.mean(l_mae)
                 best_U = U
