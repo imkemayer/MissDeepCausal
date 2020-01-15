@@ -42,7 +42,8 @@ Structure:
 |    - exp_mf: ATE estimation on approximate latent factors obtained with SoftImpute using estimators from estimators.py
 |    - exp_mi: ATE estimation via multiple imputation using estimators from estimators.py
 |    - exp_mdc: ATE estimation via MDC (process and mi) using estimators from estimators.py
-
+|
+|  config.py: default values for data generation
 
 
 ./experiments

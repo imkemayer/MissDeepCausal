@@ -109,7 +109,7 @@ def gen_treat(Z, link = "linear"):
         ps = 1/(1+np.exp(-f_Z))
         w = np.random.binomial(1, ps)
         balanced = np.mean(w) > 0.4 and np.mean(w) < 0.6
-
+        
         # adjust the intercept term if necessary to ensure balanced treatment groups
         offsets = np.linspace(-5, 5, num=50)
         i, best_idx, min_diff = 0, 0, Z.shape[0]
