@@ -1,5 +1,4 @@
-# defnie all arguments for the experiences.
-# so we have all when analyzing results.
+# define all arguments for the experiences.
 
 args = dict()
 

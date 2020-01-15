@@ -7,8 +7,7 @@ from sklearn.linear_model import LogisticRegression
 
 
 def get_ps_y01_hat(zhat, w, y):
-    # predict ps, y0 and y1 with LR
-    # utils for method = 'glm'
+    """predict ps, y0 and y1 with logistic and linear regressions"""
     w = w.reshape((-1,))
     y = y.reshape((-1,))
     n,_ = zhat.shape
@@ -81,7 +80,7 @@ def tau_dr(y, w, y0_hat=None, y1_hat=None, ps_hat=None, confounders = None, meth
 
 
 def tau_ols(Z_hat, w, y):
-    # ATE estimation via OLS regression 
+    """ATE estimation via OLS regression"""
 
     assert w.shape == y.shape
 
@@ -101,8 +100,9 @@ def tau_ols(Z_hat, w, y):
 
 
 def tau_ols_ps(zhat, w, y):
-    # Difference with linear_tau: add estimated propensity 
-    # scores as additional predictor
+    """ATE estimation via OLS regression with PS as additional covariate.
+    Difference with tau_ols: add estimated propensity 
+    scores as additional predictor"""
 
     assert w.shape == y.shape
     w = w.reshape((-1,))
@@ -123,3 +123,19 @@ def tau_ols_ps(zhat, w, y):
         tau = lr.coef_[-1]
 
     return tau
+
+
+def compute_estimates(zhat, w, y):
+    """Compute tau_dr, tau_ols, tau_ols_ps, tau_resid 
+       on given confounders matrix and w and y."""
+    tau_hat = dict()
+    ps_hat, y0_hat, y1_hat = get_ps_y01_hat(zhat, w, y)
+    tau_hat['tau_ols'] = tau_ols(zhat, w, y)
+    tau_hat['tau_ols_ps'] = tau_ols_ps(zhat, w, y)
+    tau_hat['tau_dr'] = tau_dr(y, w, y0_hat, y1_hat, ps_hat)
+    lr = LinearRegression()
+    lr.fit(zhat, y)
+    y_hat = lr.predict(zhat)
+    tau_hat['tau_resid'] = tau_residuals(y, w, y_hat, ps_hat)
+
+    return tau_hat

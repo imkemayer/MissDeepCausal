@@ -27,6 +27,7 @@ Structure:
 |
 |  estimators.py
 |    Main functions
+|    - compute_estimates: Computes the estimators below on given data
 |    - tau_dr: ATE estimation via parametric AIPW (using output of get_ps_y01_hat)
 |    - tau_ols: ATE estimation via regression of Y on W and (covariates or confounders) 
 |    - tau_ols_ps: ATE estimation via regression of Y on W and (covariates or confounders) and PS
@@ -48,6 +49,9 @@ Structure:
 
 ./experiments
 |  exp_template.py: template for calling all functions of main.py on data generated with different sets of parameters 
-|                   (for data generation and for miwae)
+|                   (for data generation, for mdc and for mi)
 
+./results
+|  *.csv: Experiment results in form of csv files (containing output of exp_template.py) are saved here
+|
 ```
