@@ -17,8 +17,6 @@ Structure:
 |                   (with default link = "linear")
 |    - ampute: generate missing values under MCAR mechanism
 |
-|  softimpute.py: SoftImpute implementation from iskandr/fancyimpute
-|
 |  miwae.py
 |    - miwae: MIWAE as proposed by P.-A. Mattei with additional sampling from Z|X 
 |             using self-normalized importance sampling weights
@@ -45,6 +43,11 @@ Structure:
 |    - exp_mdc: ATE estimation via MDC (process and mi) using estimators from estimators.py
 |
 |  config.py: default values for data generation
+|
+|  softimpute.py: WORK IN PROGRESS (SoftImpute implementation from iskandr/fancyimpute)
+|
+|  Rsoftimpute.py: WORK IN PROGRESS (import of R function SoftImpute)
+
 
 
 ./experiments
@@ -54,4 +57,24 @@ Structure:
 ./results
 |  *.csv: Experiment results in form of csv files (containing output of exp_template.py) are saved here
 |
+```
+
+Note that treatment assignment vector is assumed to have values in {0, 1} (not {-1, 1}).
+
+
+To use R package `softImpute`, use the rpy2 module and install the R package via:
+```
+import rpy2
+import rpy2.robjects as robjects
+from rpy2.robjects.packages import importr
+from rpy2.robjects import numpy2ri
+
+numpy2ri.activate()
+base = importr('base')
+utils = importr('utils')
+
+packnames = ('lattice', 'Matrix', 'softImpute')
+from rpy2.robjects.vectors import StrVector
+utils.chooseCRANmirror(ind=1)
+utils.install_packages(StrVector(packnames))
 ```

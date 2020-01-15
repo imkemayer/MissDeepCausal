@@ -497,8 +497,8 @@ if __name__=='__main__':
     import matplotlib.pyplot as plt
     import seaborn as sns
 
-    Z, X, w, y, ps = gen_lrmf(d=3)
+    Z, X, w, y, ps = gen_lrmf(d = 3)
     X_obs = ampute(X)
 
     print('boxplot of get_U_softimpute with gen_lrmf(d=3)')
-    U = get_U_softimpute(X_obs, boxplot=True)
+    U = get_U_softimpute(X_obs)
