@@ -24,7 +24,7 @@ def softimpute(x, lamb, maxit = 1000, thresh = 1e-5):
 
   for i in range(maxit):
     if x.shape[0]*x.shape[1] > 1e6:
-      U, d, V = randomized_svd(x, n_components = np.minimum(200, x.shape[1]))
+      U, d, V = randomized_svd(imp, n_components = np.minimum(200, x.shape[1]))
     else:
       U, d, V = np.linalg.svd(imp, compute_uv = True)
     d_thresh = np.maximum(d - lamb, 0)
