@@ -152,11 +152,16 @@ def gen_outcome(Z, w, tau, link = "linear", snr = 2.):
 # Generate missing values in X such that, on average, X contains 100*prop_miss missing values
 def ampute(X, prop_miss = 0.1, seed = 0):
     np.random.seed(seed)
-
-    n,p = X.shape
-    X_miss = np.copy(X)
+    n, p = X.shape
+    isub = np.random.choice(n,n-1, replace = False) 
+    jsub = np.random.choice(p,p-1, replace = False) 
+    i = np.setdiff1d(np.arange(n).tolist(), isub) # force 1 row to be completely observed
+    j = np.setdiff1d(np.arange(p).tolist(), jsub) # force 1 column to be completely observed
+    X_miss = np.copy(X[isub,:][:,jsub])
     X_miss_flat = X_miss.flatten()
-    miss_pattern = np.random.choice(n*p, np.floor(n*p*prop_miss).astype(np.int), replace = False)
+    miss_pattern = np.random.choice((n-1)*(p-1), np.floor((n-1)*(p-1)*prop_miss).astype(np.int), replace = False)
     X_miss_flat[miss_pattern] = np.nan 
-    X_miss = X_miss_flat.reshape([n, p]) # in xmiss, the missing values are represented by nans
+    X_miss = X_miss_flat.reshape([n-1, p-1]) # in xmiss, the missing values are represented by nans
+    X_miss = np.insert(X_miss, i, X[i,jsub], axis = 0)
+    X_miss = np.insert(X_miss, j, X[:,j], axis = 1)
     return X_miss
