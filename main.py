@@ -3,6 +3,7 @@ import pandas as pd
 from sklearn.linear_model import LinearRegression
 
 from estimators import compute_estimates
+from softimpute_cv import softimpute, cv_softimpute
 
 
 def exp_complete(z, x, w, y, **kwargs):
@@ -25,16 +26,12 @@ def exp_mean(xmiss, w, y, **kwargs):
     return list(tau_tmp.values())
 
 
-def exp_mf(xmiss, w, y, list_rank = None, **kwargs):
-    #zhat, r = recover_pca_gaussian_cv(xmiss, r_seq = list_rank)
-    #tau_tmp = compute_estimates(zhat, w, y)
-    # Placeholder while CV for softimpute not implemented
-    r = np.nan
-    from sklearn.impute import SimpleImputer
-    x_imp_mean = SimpleImputer(strategy = 'mean').fit_transform(xmiss)
-    tau_tmp = compute_estimates(x_imp_mean, w, y)
-
-    return np.concatenate((list(tau_tmp.values()), [r]))
+def exp_mf(xmiss, w, y, grid_len = 15, **kwargs):
+    err, grid = cv_softimpute(xmiss, grid_len = grid_len)
+    _, zhat = softimpute(xmiss, lamb = grid[np.argmin(err)])
+    tau_tmp = compute_estimates(zhat, w, y)
+    
+    return np.concatenate((list(tau_tmp.values()), [zhat.shape[1]]))
 
 
 def exp_mi(xmiss, w, y, m = 10, **kwargs):
