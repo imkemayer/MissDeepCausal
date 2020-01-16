@@ -62,7 +62,7 @@ def exp_mdc(xmiss, w, y,
             range_learning_rate = [0.00001, 0.0001, 0.001],
             range_n_epochs = [10, 100, 200], 
              **kwargs):
-    from miwae import miwae
+    from miwae import miwae_es
 
     tau = dict()
     tau['MDC.process'] = []
@@ -73,9 +73,9 @@ def exp_mdc(xmiss, w, y,
             for num_samples_zmul in range_num_samples_zmul:
                 for learning_rate in range_learning_rate:
                     for n_epochs in range_n_epochs:
-                        xhat, zhat, zhat_mul, elbo = miwae(xmiss, d = d_miwae, sig_prior = sig_prior, 
-                                                           num_samples_zmul = num_samples_zmul,
-                                                           l_rate = learning_rate, n_epochs = n_epochs)
+                        xhat, zhat, zhat_mul, elbo = miwae_es(xmiss, d = d_miwae, sig_prior = sig_prior, 
+                                                              num_samples_zmul = num_samples_zmul,
+                                                              l_rate = learning_rate, n_epochs = n_epochs)
                         # Tau estimated on Zhat=E[Z|X]
                         tau_tmp = compute_estimates(zhat, w, y)
                         tau['MDC.process'].append(list(tau_tmp.values()))
