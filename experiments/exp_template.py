@@ -19,8 +19,8 @@ range_seed = np.arange(100) # to replicate 100 times each experiment
 # MDC parameters
 range_d_offset = [0, 5, 10] # proxy of dim. of latent space given by d + offset
 range_sig_prior = [0.1, 1, 10] # variance of prior distribution on Z
-range_num_samples_zmul = [50, 200, 500] # number of samples from posterior Z | X*
-range_learning_rate = [0.00001, 0.0001, 0.001] # learning rate of MIWAE
+range_num_samples_zmul = [50, 500] # number of samples from posterior Z | X*
+range_learning_rate = [0.0001, ] # learning rate of MIWAE
 range_n_epochs = [500, ] # number of epochs of MIWAE (combined with early stopping)
 
 # MI parameters
