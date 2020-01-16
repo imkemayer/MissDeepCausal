@@ -11,12 +11,12 @@ def get_ps_y01_hat(zhat, w, y):
     w = w.reshape((-1, ))
     y = y.reshape((-1, ))
     n, _ = zhat.shape
-    lr = LogisticRegression(solver = 'saga', penalty = 'none')
+    lr = LogisticRegression(solver = 'newton-cg', penalty = 'none')
     lr.fit(zhat, w)
     ps_hat = lr.predict_proba(zhat)[:, 1]  
 
     if len(np.unique(y)) == 2:
-        lr = LogisticRegression(solver = 'saga', penalty = 'none')
+        lr = LogisticRegression(solver = 'newton-cg', penalty = 'none')
     else:
         lr = LinearRegression()
 
@@ -24,7 +24,7 @@ def get_ps_y01_hat(zhat, w, y):
     y1_hat = lr.predict(zhat)
     
     if len(np.unique(y)) == 2:
-        lr = LogisticRegression(solver = 'saga', penalty = 'none')
+        lr = LogisticRegression(solver = 'newton-cg', penalty = 'none')
     else:
         lr = LinearRegression()
     lr.fit(zhat[np.equal(w, np.zeros(n)), :], y[np.equal(w, np.zeros(n))])
@@ -88,7 +88,7 @@ def tau_ols(Z_hat, w, y):
     ZW = np.concatenate((Z_hat, w.reshape((-1, 1))), axis = 1)
 
     if len(np.unique(y)) == 2:
-        lr = LogisticRegression(solver = 'saga', penalty = 'none')
+        lr = LogisticRegression(solver = 'newton-cg', penalty = 'none')
         lr.fit(ZW, y)
         tau = lr.coef_[0, -1]
     else:
@@ -105,14 +105,14 @@ def tau_ols_ps(zhat, w, y):
     assert w.shape == y.shape
     w = w.reshape((-1, ))
     y = y.reshape((-1, ))
-    lr = LogisticRegression(solver = 'saga', penalty = 'none')
+    lr = LogisticRegression(solver = 'newton-cg', penalty = 'none')
     lr.fit(zhat, w)
     ps_hat = lr.predict_proba(zhat)
 
     ZpsW = np.concatenate((zhat, ps_hat, w.reshape((-1, 1))), axis = 1)
 
     if len(np.unique(y)) == 2:
-        lr = LogisticRegression(solver = 'saga', penalty = 'none')
+        lr = LogisticRegression(solver = 'newton-cg', penalty = 'none')
         lr.fit(ZpsW, y)
         tau = lr.coef_[0, -1]
     else:
