@@ -47,7 +47,7 @@ def tau_residuals(y, w, y_hat = None, ps_hat = None, confounders = None, method 
 
     if method == "glm":
         lr = LinearRegression(fit_intercept = False)
-        lr.fit((w - ps_hat).reshape((-1,1)), (y - y_hat).reshape((-1, 1)))
+        lr.fit((w - ps_hat).reshape((-1, 1)), (y - y_hat).reshape((-1, 1)))
         tau = float(lr.coef_)
     elif method == "grf":
         raise NotImplementedError("Causal forest estimation not implemented here yet.")

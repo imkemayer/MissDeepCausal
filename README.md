@@ -44,7 +44,10 @@ Structure:
 |
 |  config.py: default values for data generation
 |
-|  softimpute_cv.py: softimpute with cross-validation on lambda
+|  softimpute_cv.py:
+|   - softimpute: Softimpute on incomplete matrix with given regularization parameter lamb
+|   - cv_softimpute: Returns cross-validation error of softimpute on a grid of values of lamb
+
 
 
 

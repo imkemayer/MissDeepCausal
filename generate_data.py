@@ -5,33 +5,26 @@ import numpy as np
 def gen_lrmf(n = 1000, d = 3, p = 100, tau = 1, link = "linear",
              citcio = False, prop_miss = 0,
              seed = 0, x_snr = 2., y_snr = 2.):
-
     x_sd = 1./(x_snr * np.sqrt(n*p))
-    # V is fixed throughout experiments for given n,p,d
+    # V is fixed throughout replications for given fixed n, p, d
     np.random.seed(0)
     V = np.random.randn(p, d) 
 
     np.random.seed(seed)
     Z = np.random.randn(n, d)
-    
     X = Z.dot(V.transpose())
     assert X.shape == (n, p)
-
     X = X + x_sd*np.random.randn(n, p) # add perturbation to observation matrix
 
     if not(citcio):
         # generate treatment assignment W
         ps, w = gen_treat(Z, link)
-
         # generate outcome
         y = gen_outcome(Z, w, tau, link, y_snr)
     else:
-        ps, w, y = citcio_treat_out(X, prop_miss, seed, link, tau, sd)
-
-    # print(y.shape, Z.shape, w.shape)
+        ps, w, y = citcio_treat_out(X, prop_miss, seed, link, tau, y_snr)
     assert y.shape == (n, )
     assert w.shape == (n, )
-    assert Z.shape == (n, d)
 
     return Z, X, w, y, ps
 
@@ -41,7 +34,7 @@ def gen_dlvm(n = 1000, d = 3, p = 100, tau = 1, link = "linear",
              seed = 0,
              h = 5, y_snr = 2.):
 
-    # V, W, a, b, alpha, beta are fixed throughout experiments for given n,p,d,h
+    # V, W, a, b, alpha, beta are fixed throughout replications for fixed n, p, d, h
     np.random.seed(0)
     V = np.random.randn(p, h)
     W = np.random.uniform(0, 1, int(h*d)).reshape((h, d))
@@ -52,12 +45,10 @@ def gen_dlvm(n = 1000, d = 3, p = 100, tau = 1, link = "linear",
 
     np.random.seed(seed)
     Z = np.random.randn(n, d)
-
     X = np.empty([n, p])
     for i in range(n):
         mu, Sigma = get_dlvm_params(Z[i,:].reshape(d, 1), V, W, a, b, alpha, beta)
         X[i,:] = np.random.multivariate_normal(mu, Sigma, 1)
-
     assert X.shape == (n, p)
 
     if not(citcio):
@@ -67,19 +58,14 @@ def gen_dlvm(n = 1000, d = 3, p = 100, tau = 1, link = "linear",
         y = gen_outcome(Z, w, tau, link, y_snr)
     else:
         ps, w, y = citcio_treat_out(X, prop_miss, seed, link, tau, y_snr)
-
     assert y.shape == (n, )
     assert w.shape == (n, )
-    assert Z.shape == (n, d)
-
+    
     return Z, X, w, y, ps
 
 # Compute expectation and covariance of conditional distribution X given Z
 def get_dlvm_params(z, V, W, a, b, alpha, beta):
-    
-    # print(W.shape, z.shape, a.shape, z.shape)
-    hu = (W.dot(z) + a).reshape(-1, 1) # same shape of a (not h)
-    # u = W.dot(z) + a
+    hu = (W.dot(z) + a).reshape(-1, 1) # same shape as a (not h)
     mu = (V.dot(np.tanh(hu)) + b).reshape(-1, )
     sig = np.exp(alpha.transpose().dot(np.tanh(hu)) + beta)
     Sigma = sig*np.identity(mu.shape[0])
@@ -93,7 +79,6 @@ def citcio_treat_out(X, prop_miss, seed, link, tau, snr):
     X_miss = ampute(X, prop_miss = prop_miss, seed = seed)
     imp = IterativeImputer()
     X_imp = imp.fit_transform(X_miss)
-
     ps, w = gen_treat(X_imp, link = link)
     y = gen_outcome(X_imp, w, tau, link, snr)
 

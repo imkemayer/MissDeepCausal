@@ -4,22 +4,24 @@ from sklearn.utils.extmath import randomized_svd
 F32PREC = np.finfo(np.float32).eps
 
 
-def converged(x_old, x, mask, thresh):
-  x_old_na = x_old[mask]
-  x_na = x[mask]
-  difference = x_old_na - x_na
-  mse = np.sum(difference ** 2)
-  denom = np.sqrt((x_old_na ** 2).sum())
-  
-  if denom == 0 or (denom < F32PREC and np.sqrt(mse) > F32PREC):
-      return False
-  else:
-      return (np.sqrt(mse) / denom) < thresh
 
 def softimpute(x, lamb, maxit = 1000, thresh = 1e-5):
   mask = ~np.isnan(x)
   imp = x.copy()
   imp[~mask] = 0
+
+  # convergence criterion for softimpute
+  def converged(x_old, x, mask, thresh):
+    x_old_na = x_old[mask]
+    x_na = x[mask]
+    rmse = np.sqrt(np.sum((x_old_na - x_na) ** 2))
+    denom = np.sqrt((x_old_na ** 2).sum())
+
+    if denom == 0 or (denom < F32PREC and rmse > F32PREC):
+        return False
+    else:
+        return (rmse / denom) < thresh
+
   for i in range(maxit):
     U, d, V = np.linalg.svd(imp, compute_uv = True)
     d_thresh = np.maximum(d - lamb, 0)
