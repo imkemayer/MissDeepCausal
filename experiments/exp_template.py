@@ -12,7 +12,7 @@ range_citcio = [False, ] # classical unconfoundedness (on Z) or unconfoundedness
 range_n = [1000, 10000, 100000] # number of observations
 range_p = [10, 100, 1000] # dimension of ambient space
 range_d_over_p = [0.3, 0.6, 0.9] # ratio d over p
-range_snr = [0.1, 1., 10.] # SNR in outcome generation (y0, y1)
+range_snr = [1., 5., 10.] # SNR in outcome generation (y0, y1)
 range_prop_miss = [0, 0.1, 0.3, 0.5, 0.7, 0.9] # proportion of MCAR missing values
 range_seed = np.arange(100) # to replicate 100 times each experiment
 
