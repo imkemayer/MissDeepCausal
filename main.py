@@ -28,7 +28,7 @@ def exp_mean(xmiss, w, y, **kwargs):
 
 def exp_mf(xmiss, w, y, grid_len = 15, **kwargs):
     err, grid = cv_softimpute(xmiss, grid_len = grid_len)
-    _, zhat = softimpute(xmiss, lamb = grid[np.argmin(err)])
+    zhat,_ = softimpute(xmiss, lamb = grid[np.argmin(err)])
     tau_tmp = compute_estimates(zhat, w, y)
     
     return np.concatenate((list(tau_tmp.values()), [zhat.shape[1]]))
