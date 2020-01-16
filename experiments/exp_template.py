@@ -55,11 +55,11 @@ for args['model'] in range_model:
                         for args['prop_miss'] in range_prop_miss:
                             for args['seed'] in range_seed:
                                 if args['model'] == "lrmf":
-                                    Z, X, w, y, ps = gen_lrmf(n=args['n'], d=args['d'], p=args['p'], y_snr = args['snr'],
+                                    Z, X, w, y, ps = gen_lrmf(n = args['n'], d = args['d'], p = args['p'], y_snr = args['snr'],
                                                               citcio = args['citcio'], prop_miss = args['prop_miss'], 
                                                               seed = args['seed'])
                                 elif args['model'] == "dlvm":
-                                    Z, X, w, y, ps = gen_dlvm(n=args['n'], d=args['d'], p=args['p'], y_snr = args['snr'],
+                                    Z, X, w, y, ps = gen_dlvm(n = args['n'], d = args['d'], p = args['p'], y_snr = args['snr'],
                                                               citcio = args['citcio'], prop_miss = args['prop_miss'], 
                                                               seed = args['seed'])
                                 

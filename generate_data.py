@@ -24,7 +24,7 @@ def gen_lrmf(n = 1000, d = 3, p = 100, tau = 1, link = "linear",
         ps, w = gen_treat(Z, link)
 
         # generate outcome
-        y = gen_outcome(Z, w, tau, link, snr = y_snr)
+        y = gen_outcome(Z, w, tau, link, y_snr)
     else:
         ps, w, y = citcio_treat_out(X, prop_miss, seed, link, tau, sd)
 
@@ -64,7 +64,7 @@ def gen_dlvm(n = 1000, d = 3, p = 100, tau = 1, link = "linear",
         # generate treatment assignment W
         ps, w = gen_treat(Z, link)
         # generate outcome
-        y = gen_outcome(Z, w, tau, link, snr = y_snr)
+        y = gen_outcome(Z, w, tau, link, y_snr)
     else:
         ps, w, y = citcio_treat_out(X, prop_miss, seed, link, tau, y_snr)
 
