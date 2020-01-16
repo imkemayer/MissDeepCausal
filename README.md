@@ -60,21 +60,3 @@ Structure:
 ```
 
 Note that treatment assignment vector is assumed to have values in {0, 1} (not {-1, 1}).
-
-
-To use R package `softImpute`, use the rpy2 module and install the R package via:
-```
-import rpy2
-import rpy2.robjects as robjects
-from rpy2.robjects.packages import importr
-from rpy2.robjects import numpy2ri
-
-numpy2ri.activate()
-base = importr('base')
-utils = importr('utils')
-
-packnames = ('lattice', 'Matrix', 'softImpute')
-from rpy2.robjects.vectors import StrVector
-utils.chooseCRANmirror(ind=1)
-utils.install_packages(StrVector(packnames))
-```
