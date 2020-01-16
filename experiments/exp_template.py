@@ -7,12 +7,12 @@ from generate_data import gen_lrmf, gen_dlvm, ampute
 from config import args
 
 # Data generating process parameters 
-range_model = ["dlvm","lrmf"] # data model class
-range_citcio = [False, True] # classical unconfoundedness (on Z) or unconfoundedness despite missingness (on X)
-range_n = [1000, 5000, 10000, 20000] # number of observations
-range_p = [10, 50, 100, 200] # dimension of ambient space
+range_model = ["dlvm", "lrmf"] # data model class
+range_citcio = [False, ] # classical unconfoundedness (on Z) or unconfoundedness despite missingness (on X)
+range_n = [1000, 10000, 100000] # number of observations
+range_p = [10, 100, 1000] # dimension of ambient space
 range_d_over_p = [0.3, 0.6, 0.9] # ratio d over p
-range_sd = [0.1, 0.5, 1, 2] # additive noise in outcome generation (y0, y1)
+range_snr = [0.1, 1, 10] # SNR in outcome generation (y0, y1)
 range_prop_miss = [0, 0.1, 0.3, 0.5, 0.7, 0.9] # proportion of MCAR missing values
 range_seed = np.arange(100) # to replicate 100 times each experiment
 
@@ -21,7 +21,7 @@ range_d_offset = [0, 5, 10] # proxy of dim. of latent space given by d + offset
 range_sig_prior = [0.1, 1, 10] # variance of prior distribution on Z
 range_num_samples_zmul = [50, 200, 500] # number of samples from posterior Z | X*
 range_learning_rate = [0.00001, 0.0001, 0.001] # learning rate of MIWAE
-range_n_epochs = [10, 100, 200, 500] # number of epochs of MIWAE
+range_n_epochs = [500, ] # number of epochs of MIWAE (combined with early stopping)
 
 # MI parameters
 range_m = [10, 20, 50] # number of imputations
