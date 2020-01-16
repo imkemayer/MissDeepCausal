@@ -23,7 +23,10 @@ def softimpute(x, lamb, maxit = 1000, thresh = 1e-5):
         return (rmse / denom) < thresh
 
   for i in range(maxit):
-    U, d, V = np.linalg.svd(imp, compute_uv = True)
+    if x.shape[0]*x.shape[1] > 1e6:
+      U, d, V = randomized_svd(x, n_components = np.minimum(200, x.shape[1]))
+    else:
+      U, d, V = np.linalg.svd(imp, compute_uv = True)
     d_thresh = np.maximum(d - lamb, 0)
     rank = (d_thresh > 0).sum()
     d_thresh = d_thresh[:rank]
@@ -45,7 +48,10 @@ def cv_softimpute(x, grid_len = 15, maxit = 1000, thresh = 1e-5):
   x0 = x.copy()
   x0[~mask] = 0
   # svd on x0
-  d = np.linalg.svd(x0, compute_uv = False)
+  if x.shape[0]*x.shape[1] > 1e6:
+      _, d, _ = randomized_svd(x0, n_components = np.minimum(200, x.shape[1]))
+  else:
+    d = np.linalg.svd(x0, compute_uv = False)
   # generate grid for lambda values
   lambda_max = np.max(d)
   lambda_min = 0.001*lambda_max
