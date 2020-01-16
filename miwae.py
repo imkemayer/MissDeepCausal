@@ -303,6 +303,7 @@ def miwae_es(X_miss, d=3, d_miwae=3, h_miwae=128, add_mask=False, sig_prior = 1,
   losses_inter = []
   stop = False
   last_improvement = 0
+  elbo = np.nan
   with tf.Session() as sess:
       sess.run(tf.global_variables_initializer())
       epoch = 0
@@ -320,7 +321,7 @@ def miwae_es(X_miss, d=3, d_miwae=3, h_miwae=128, add_mask=False, sig_prior = 1,
           batch_mask = mask[sample, :]
 
           train_miss.run(feed_dict = {x: batch_data, learning_rate: l_rate, K:20, xmask: batch_mask})
-          avg_loss += -miwae_loss.eval(feed_dict = {x: batch_data, K:20, xmask: batch_mask}) * len(sample)/(1.*n)
+          avg_loss += miwae_loss.eval(feed_dict = {x: batch_data, K:20, xmask: batch_mask}) * len(sample)/(1.*n)
 
         #cost history since the last best cost
         losses_inter.append(avg_loss)
