@@ -130,10 +130,10 @@ def miwae(X_miss, d=3, d_miwae=3, h_miwae=128, add_mask=False, sig_prior = 1,
   # ##########
   sir_logits = tf.transpose(logpxobsgivenz + logpz - logq)
 #   sirx = tfd.Categorical(logits = sir_logits).sample(num_samples_xmul) # needed if we want to do multiple imputation on x
-  xmul = tf.reshape(xgivenz.sample(),[K,batch_size,p+pwy])
+  xmul = tf.reshape(xgivenz.sample(), [K, batch_size, p+pwy])
 
   sirz = tfd.Categorical(logits = sir_logits).sample(num_samples_zmul)
-  zmul = tf.reshape(zgivenx,[K,batch_size,d_miwae])
+  zmul = tf.reshape(zgivenx, [K, batch_size, d_miwae])
   
   # ##########
 
@@ -143,7 +143,7 @@ def miwae(X_miss, d=3, d_miwae=3, h_miwae=128, add_mask=False, sig_prior = 1,
 #   x_mul_imp = np.tile(xhat_0,[num_samples_xmul,1,1])
   zhat = np.zeros([n,d_miwae]) # low-dimensional representations
 
-  zhat_mul = np.tile(zhat, [num_samples_zmul,1,1])
+  zhat_mul = np.tile(zhat, [num_samples_zmul, 1, 1])
       
   with tf.Session() as sess:
       sess.run(tf.global_variables_initializer())
@@ -155,21 +155,21 @@ def miwae(X_miss, d=3, d_miwae=3, h_miwae=128, add_mask=False, sig_prior = 1,
             train_miss.run(feed_dict={x: batches_data[it], learning_rate: l_rate, K:20, xmask: batches_mask[it]}) # Gradient step      
         if ep == n_epochs - 1:
             losstrain = np.array([miwae_loss.eval(feed_dict={x: xhat_0, K:20, xmask: mask})]) # MIWAE bound evaluation
-            miwae_loss_train = np.append(miwae_loss_train,-losstrain,axis=0)
+            miwae_loss_train = np.append(miwae_loss_train, -losstrain, axis=0)
             elbo = -float(losstrain) 
             print('Epoch %g' %ep)
             print('MIWAE likelihood bound  %g' %-losstrain)
             for i in range(n): # We impute the observations one at a time for memory reasons
                 # # Single imputation:
-                xhat[i,:][~mask[i,:]]=xm.eval(feed_dict={x: xhat_0[i,:].reshape([1,p+pwy]), K:10000, xmask: mask[i,:].reshape([1,p+pwy])})[~mask[i,:].reshape([1,p+pwy])]
+                xhat[i, :][~mask[i, :]]=xm.eval(feed_dict={x: xhat_0[i,:].reshape([1, p+pwy]), K:10000, xmask: mask[i, :].reshape([1, p+pwy])})[~mask[i,:].reshape([1,p+pwy])]
                 # # Multiple imputation:
                 # si, xmu = sess.run([sirx, xmul],feed_dict={x: xhat_0[i,:].reshape([1,p+pwy]), K:10000, xmask: mask[i,:].reshape([1,p+pwy])})
                 # x_mul_imp[:,i,:][~np.tile(mask[i,:].reshape([1,p+pwy]),[num_samples_xmul,1])] = np.squeeze(xmu[si,:,:])[~np.tile(mask[i,:].reshape([1,p+pwy]),[num_samples_xmul,1])]
                 # Dimension reduction:
-                zhat[i,:] = z_hat.eval(feed_dict={x: xhat_0[i,:].reshape([1,p+pwy]), K:10000, xmask: mask[i,:].reshape([1,p+pwy])})
+                zhat[i, :] = z_hat.eval(feed_dict={x: xhat_0[i,:].reshape([1, p+pwy]), K:10000, xmask: mask[i,:].reshape([1,p+pwy])})
                 # Z|X* sampling:
-                si, zmu = sess.run([sirz, zmul],feed_dict={x: xhat_0[i,:].reshape([1,p+pwy]), K:10000, xmask: mask[i,:].reshape([1,p+pwy])})    
-                zhat_mul[:,i,:] = np.squeeze(zmu[si,:,:]).reshape((num_samples_zmul, d_miwae))
+                si, zmu = sess.run([sirz, zmul],feed_dict={x: xhat_0[i,:].reshape([1, p+pwy]), K:10000, xmask: mask[i,:].reshape([1,p+pwy])})    
+                zhat_mul[:, i, :] = np.squeeze(zmu[si,:,:]).reshape((num_samples_zmul, d_miwae))
   
   print('----- miwae training done -----')
   
