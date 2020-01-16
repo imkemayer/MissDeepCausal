@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 
-from sklearn.linear_model import LinearRegression
-from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import RidgeCV
+from sklearn.linear_model import LogisticRegressionCV
 
 
 
@@ -11,22 +11,22 @@ def get_ps_y01_hat(zhat, w, y):
     w = w.reshape((-1, ))
     y = y.reshape((-1, ))
     n, _ = zhat.shape
-    lr = LogisticRegression(solver = 'lbfgs', penalty = 'none')
+    lr = LogisticRegressionCV(solver = 'lbfgs', cv=5)
     lr.fit(zhat, w)
     ps_hat = lr.predict_proba(zhat)[:, 1]  
 
     if len(np.unique(y)) == 2:
-        lr = LogisticRegression(solver = 'lbfgs', penalty = 'none')
+        lr = LogisticRegressionCV(solver = 'lbfgs', cv=5)
     else:
-        lr = LinearRegression()
+        lr = RidgeCV(alphas=(0.1, 1.0, 10.0))
 
     lr.fit(zhat[np.equal(w, np.ones(n)), :], y[np.equal(w, np.ones(n))])
     y1_hat = lr.predict(zhat)
     
     if len(np.unique(y)) == 2:
-        lr = LogisticRegression(solver = 'lbfgs', penalty = 'none')
+        lr = LogisticRegressionCV(solver = 'lbfgs', cv=5)
     else:
-        lr = LinearRegression()
+        lr = RidgeCV(alphas=(0.1, 1.0, 10.0))
     lr.fit(zhat[np.equal(w, np.zeros(n)), :], y[np.equal(w, np.zeros(n))])
     y0_hat = lr.predict(zhat)
 
@@ -46,7 +46,7 @@ def tau_residuals(y, w, y_hat = None, ps_hat = None, confounders = None, method 
     assert w.shape == y.shape
 
     if method == "glm":
-        lr = LinearRegression(fit_intercept = False)
+        lr = RidgeCV(alphas=(0.1, 1.0, 10.0), fit_intercept = False)
         lr.fit((w - ps_hat).reshape((-1, 1)), (y - y_hat).reshape((-1, 1)))
         tau = float(lr.coef_)
     elif method == "grf":
@@ -88,11 +88,11 @@ def tau_ols(Z_hat, w, y):
     ZW = np.concatenate((Z_hat, w.reshape((-1, 1))), axis = 1)
 
     if len(np.unique(y)) == 2:
-        lr = LogisticRegression(solver = 'lbfgs', penalty = 'none')
+        lr = LogisticRegressionCV(solver = 'lbfgs', cv=5)
         lr.fit(ZW, y)
         tau = lr.coef_[0, -1]
     else:
-        lr = LinearRegression()
+        lr = RidgeCV(alphas=(0.1, 1.0, 10.0))
         lr.fit(ZW, y)
         tau = lr.coef_[-1]
     return tau
@@ -105,18 +105,18 @@ def tau_ols_ps(zhat, w, y):
     assert w.shape == y.shape
     w = w.reshape((-1, ))
     y = y.reshape((-1, ))
-    lr = LogisticRegression(solver = 'lbfgs', penalty = 'none')
+    lr = LogisticRegressionCV(solver = 'lbfgs', cv=5)
     lr.fit(zhat, w)
     ps_hat = lr.predict_proba(zhat)
 
     ZpsW = np.concatenate((zhat, ps_hat, w.reshape((-1, 1))), axis = 1)
 
     if len(np.unique(y)) == 2:
-        lr = LogisticRegression(solver = 'lbfgs', penalty = 'none')
+        lr = LogisticRegressionCV(solver = 'lbfgs', cv=5)
         lr.fit(ZpsW, y)
         tau = lr.coef_[0, -1]
     else:
-        lr = LinearRegression()
+        lr = RidgeCV(alphas=(0.1, 1.0, 10.0))
         lr.fit(ZpsW, y)
         tau = lr.coef_[-1]
     return tau
@@ -130,7 +130,7 @@ def compute_estimates(zhat, w, y):
     tau_hat['tau_ols'] = tau_ols(zhat, w, y)
     tau_hat['tau_ols_ps'] = tau_ols_ps(zhat, w, y)
     tau_hat['tau_dr'] = tau_dr(y, w, y0_hat, y1_hat, ps_hat)
-    lr = LinearRegression()
+    lr = RidgeCV(alphas=(0.1, 1.0, 10.0))
     lr.fit(zhat, y)
     y_hat = lr.predict(zhat)
     tau_hat['tau_resid'] = tau_residuals(y, w, y_hat, ps_hat)
