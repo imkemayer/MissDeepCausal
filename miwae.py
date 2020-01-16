@@ -45,7 +45,7 @@ def miwae(X_miss, d=3, d_miwae=3, h_miwae=128, add_mask=False, sig_prior = 1,
   # ##########
   xhat_0 = np.copy(X_miss)
   xhat_0[np.isnan(X_miss)] = 0
-  
+
   p_mod = p
   if add_mask:
     mask_mod = np.copy(mask)
@@ -122,10 +122,10 @@ def miwae(X_miss, d=3, d_miwae=3, h_miwae=128, add_mask=False, sig_prior = 1,
   # ##########
   imp_weights = tf.nn.softmax(logpxobsgivenz + logpz - logq,0) # these are w_1,....,w_L for all observations in the batch
   xms = tf.reshape(xgivenz.mean(),[K,batch_size,p+pwy])
-  xm=tf.einsum('ki,kij->ij', imp_weights, xms) 
+  xm=tf.einsum('ki,kij->ij', imp_weights, xms)
 
   # ##########
-  z_hat = tf.einsum('ki,kij->ij', imp_weights, zgivenx) 
+  z_hat = tf.einsum('ki,kij->ij', imp_weights, zgivenx)
 
   # ##########
   sir_logits = tf.transpose(logpxobsgivenz + logpz - logq)
@@ -134,7 +134,7 @@ def miwae(X_miss, d=3, d_miwae=3, h_miwae=128, add_mask=False, sig_prior = 1,
 
   sirz = tfd.Categorical(logits = sir_logits).sample(num_samples_zmul)
   zmul = tf.reshape(zgivenx, [K, batch_size, d_miwae])
-  
+
   # ##########
 
   miwae_loss_train=np.array([])
@@ -144,7 +144,7 @@ def miwae(X_miss, d=3, d_miwae=3, h_miwae=128, add_mask=False, sig_prior = 1,
   zhat = np.zeros([n,d_miwae]) # low-dimensional representations
 
   zhat_mul = np.tile(zhat, [num_samples_zmul, 1, 1])
-      
+
   with tf.Session() as sess:
       sess.run(tf.global_variables_initializer())
       for ep in range(1,n_epochs):
@@ -152,11 +152,11 @@ def miwae(X_miss, d=3, d_miwae=3, h_miwae=128, add_mask=False, sig_prior = 1,
         batches_data = np.array_split(xhat_0[perm,], int(n/bs))
         batches_mask = np.array_split(mask[perm,], int(n/bs))
         for it in range(len(batches_data)):
-            train_miss.run(feed_dict={x: batches_data[it], learning_rate: l_rate, K:20, xmask: batches_mask[it]}) # Gradient step      
+            train_miss.run(feed_dict={x: batches_data[it], learning_rate: l_rate, K:20, xmask: batches_mask[it]}) # Gradient step
         if ep == n_epochs - 1:
             losstrain = np.array([miwae_loss.eval(feed_dict={x: xhat_0, K:20, xmask: mask})]) # MIWAE bound evaluation
             miwae_loss_train = np.append(miwae_loss_train, -losstrain, axis=0)
-            elbo = -float(losstrain) 
+            elbo = -float(losstrain)
             print('Epoch %g' %ep)
             print('MIWAE likelihood bound  %g' %-losstrain)
             for i in range(n): # We impute the observations one at a time for memory reasons
@@ -168,11 +168,10 @@ def miwae(X_miss, d=3, d_miwae=3, h_miwae=128, add_mask=False, sig_prior = 1,
                 # Dimension reduction:
                 zhat[i, :] = z_hat.eval(feed_dict={x: xhat_0[i,:].reshape([1, p+pwy]), K:10000, xmask: mask[i,:].reshape([1,p+pwy])})
                 # Z|X* sampling:
-                si, zmu = sess.run([sirz, zmul],feed_dict={x: xhat_0[i,:].reshape([1, p+pwy]), K:10000, xmask: mask[i,:].reshape([1,p+pwy])})    
+                si, zmu = sess.run([sirz, zmul],feed_dict={x: xhat_0[i,:].reshape([1, p+pwy]), K:10000, xmask: mask[i,:].reshape([1,p+pwy])})
                 zhat_mul[:, i, :] = np.squeeze(zmu[si,:,:]).reshape((num_samples_zmul, d_miwae))
-  
+
   print('----- miwae training done -----')
-  
   return xhat, zhat, zhat_mul, elbo
 
 
@@ -198,7 +197,7 @@ def miwae_es(X_miss, d=3, d_miwae=3, h_miwae=128, add_mask=False, sig_prior = 1,
   # ##########
   xhat_0 = np.copy(X_miss)
   xhat_0[np.isnan(X_miss)] = 0
-  
+
   p_mod = p
   if add_mask:
     mask_mod = np.copy(mask)
@@ -275,10 +274,10 @@ def miwae_es(X_miss, d=3, d_miwae=3, h_miwae=128, add_mask=False, sig_prior = 1,
   # ##########
   imp_weights = tf.nn.softmax(logpxobsgivenz + logpz - logq,0) # these are w_1,....,w_L for all observations in the batch
   xms = tf.reshape(xgivenz.mean(),[K,batch_size,p+pwy])
-  xm=tf.einsum('ki,kij->ij', imp_weights, xms) 
+  xm=tf.einsum('ki,kij->ij', imp_weights, xms)
 
   # ##########
-  z_hat = tf.einsum('ki,kij->ij', imp_weights, zgivenx) 
+  z_hat = tf.einsum('ki,kij->ij', imp_weights, zgivenx)
 
   # ##########
   sir_logits = tf.transpose(logpxobsgivenz + logpz - logq)
@@ -287,7 +286,7 @@ def miwae_es(X_miss, d=3, d_miwae=3, h_miwae=128, add_mask=False, sig_prior = 1,
 
   sirz = tfd.Categorical(logits = sir_logits).sample(num_samples_zmul)
   zmul = tf.reshape(zgivenx, [K, batch_size, d_miwae])
-  
+
   # ##########
 
   miwae_loss_train=np.array([])
@@ -319,7 +318,7 @@ def miwae_es(X_miss, d=3, d_miwae=3, h_miwae=128, add_mask=False, sig_prior = 1,
         for sample in mini_batches:
           batch_data = xhat_0[sample, :]
           batch_mask = mask[sample, :]
-          
+
           train_miss.run(feed_dict = {x: batch_data, learning_rate: l_rate, K:20, xmask: batch_mask})
           avg_loss += -miwae_loss.eval(feed_dict = {x: batch_data, K:20, xmask: batch_mask}) * len(sample)/(1.*n)
 
@@ -344,7 +343,7 @@ def miwae_es(X_miss, d=3, d_miwae=3, h_miwae=128, add_mask=False, sig_prior = 1,
       if epoch == n_epochs - 1 or stop:
         losstrain = np.array([miwae_loss.eval(feed_dict={x: xhat_0, K:20, xmask: mask})]) # MIWAE bound evaluation
         miwae_loss_train = np.append(miwae_loss_train, -losstrain, axis=0)
-        elbo = -float(losstrain) 
+        elbo = -float(losstrain)
         print('Epoch %g' %epoch)
         print('MIWAE likelihood bound  %g' %-losstrain)
         for i in range(n): # We impute the observations one at a time for memory reasons
@@ -356,9 +355,9 @@ def miwae_es(X_miss, d=3, d_miwae=3, h_miwae=128, add_mask=False, sig_prior = 1,
           # Dimension reduction:
           zhat[i, :] = z_hat.eval(feed_dict={x: xhat_0[i,:].reshape([1, p+pwy]), K:10000, xmask: mask[i,:].reshape([1,p+pwy])})
           # Z|X* sampling:
-          si, zmu = sess.run([sirz, zmul],feed_dict={x: xhat_0[i,:].reshape([1, p+pwy]), K:10000, xmask: mask[i,:].reshape([1,p+pwy])})    
+          si, zmu = sess.run([sirz, zmul],feed_dict={x: xhat_0[i,:].reshape([1, p+pwy]), K:10000, xmask: mask[i,:].reshape([1,p+pwy])})
           zhat_mul[:, i, :] = np.squeeze(zmu[si,:,:]).reshape((num_samples_zmul, d_miwae))
 
-  
+
   print('----- miwae training done -----')
   return xhat, zhat, zhat_mul, elbo
