@@ -12,7 +12,7 @@ range_citcio = [False, ] # classical unconfoundedness (on Z) or unconfoundedness
 range_n = [1000, 10000, 100000] # number of observations
 range_p = [10, 100, 1000] # dimension of ambient space
 range_d_over_p = [0.3, 0.6, 0.9] # ratio d over p
-range_snr = [0.1, 1, 10] # SNR in outcome generation (y0, y1)
+range_snr = [0.1, 1., 10.] # SNR in outcome generation (y0, y1)
 range_prop_miss = [0, 0.1, 0.3, 0.5, 0.7, 0.9] # proportion of MCAR missing values
 range_seed = np.arange(100) # to replicate 100 times each experiment
 
@@ -51,15 +51,15 @@ for args['model'] in range_model:
             for args['p'] in range_p:
                 range_d = [np.floor(args['p']*x) for x in range_d_over_p]
                 for args['d'] in range_d:
-                    for args['sd'] in range_sd:
+                    for args['snr'] in range_snr:
                         for args['prop_miss'] in range_prop_miss:
                             for args['seed'] in range_seed:
                                 if args['model'] == "lrmf":
-                                    Z, X, w, y, ps = gen_lrmf(n=args['n'], d=args['d'], p=args['p'], sd = args['sd'],
+                                    Z, X, w, y, ps = gen_lrmf(n=args['n'], d=args['d'], p=args['p'], y_snr = args['snr'],
                                                               citcio = args['citcio'], prop_miss = args['prop_miss'], 
                                                               seed = args['seed'])
                                 elif args['model'] == "dlvm":
-                                    Z, X, w, y, ps = gen_dlvm(n=args['n'], d=args['d'], p=args['p'], sd = args['sd'],
+                                    Z, X, w, y, ps = gen_dlvm(n=args['n'], d=args['d'], p=args['p'], y_snr = args['snr'],
                                                               citcio = args['citcio'], prop_miss = args['prop_miss'], 
                                                               seed = args['seed'])
                                 

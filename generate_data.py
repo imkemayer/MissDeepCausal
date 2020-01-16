@@ -4,8 +4,10 @@ import numpy as np
 # Low rank matrix factorization
 def gen_lrmf(n = 1000, d = 3, p = 100, tau = 1, link = "linear",
              citcio = False, prop_miss = 0,
-             seed = 0, noise_sd = 1, sd = .1):
+             seed = 0, x_snr = 2., y_snr = 2.):
 
+    x_sd = 1./(x_snr * np.sqrt(n*p))
+    print(x_sd)
     # V is fixed throughout experiments for given n,p,d
     np.random.seed(0)
     V = np.random.randn(p, d) 
@@ -16,14 +18,14 @@ def gen_lrmf(n = 1000, d = 3, p = 100, tau = 1, link = "linear",
     X = Z.dot(V.transpose())
     assert X.shape == (n, p)
 
-    X = X + noise_sd*np.random.randn(n, p) # add perturbation to observation matrix
+    X = X + x_sd*np.random.randn(n, p) # add perturbation to observation matrix
 
     if not(citcio):
         # generate treatment assignment W
         ps, w = gen_treat(Z, link)
 
         # generate outcome
-        y = gen_outcome(Z, w, tau, link, sd = sd)
+        y = gen_outcome(Z, w, tau, link, snr = y_snr)
     else:
         ps, w, y = citcio_treat_out(X, prop_miss, seed, link, tau, sd)
 
@@ -38,7 +40,7 @@ def gen_lrmf(n = 1000, d = 3, p = 100, tau = 1, link = "linear",
 def gen_dlvm(n = 1000, d = 3, p = 100, tau = 1, link = "linear", 
              citcio = False, prop_miss = 0,
              seed = 0,
-             h = 5, sd = .1):
+             h = 5, y_snr = 2.):
 
     # V, W, a, b, alpha, beta are fixed throughout experiments for given n,p,d,h
     np.random.seed(0)
@@ -63,9 +65,9 @@ def gen_dlvm(n = 1000, d = 3, p = 100, tau = 1, link = "linear",
         # generate treatment assignment W
         ps, w = gen_treat(Z, link)
         # generate outcome
-        y = gen_outcome(Z, w, tau, link, sd=sd)
+        y = gen_outcome(Z, w, tau, link, snr = y_snr)
     else:
-        ps, w, y = citcio_treat_out(X, prop_miss, seed, link, tau, sd)
+        ps, w, y = citcio_treat_out(X, prop_miss, seed, link, tau, y_snr)
 
     assert y.shape == (n, )
     assert w.shape == (n, )
@@ -85,7 +87,7 @@ def get_dlvm_params(z, V, W, a, b, alpha, beta):
     
     return mu, Sigma
 
-def citcio_treat_out(X, prop_miss, seed, link, tau, sd):
+def citcio_treat_out(X, prop_miss, seed, link, tau, snr):
     from sklearn.experimental import enable_iterative_imputer
     from sklearn.impute import IterativeImputer
 
@@ -94,7 +96,7 @@ def citcio_treat_out(X, prop_miss, seed, link, tau, sd):
     X_imp = imp.fit_transform(X_miss)
 
     ps, w = gen_treat(X_imp, link = link)
-    y = gen_outcome(X_imp, w, tau, link, sd)
+    y = gen_outcome(X_imp, w, tau, link, snr)
 
     return ps, w, y
 
@@ -130,14 +132,17 @@ def gen_treat(Z, link = "linear"):
     return ps, w
 
 # Generate outcomes using confounders Z, treatment assignment w and ATE tau
-def gen_outcome(Z, w, tau, link = "linear", sd = 10):
+def gen_outcome(Z, w, tau, link = "linear", snr = 2.): 
     if link == "linear":
         n = Z.shape[0]
         ncolZ = Z.shape[1]
-        epsilon = sd*np.random.randn(n)
+        
         beta = np.tile([-0.2, 0.155, 0.5, -1, 0.2], int(np.ceil(ncolZ/5.)))  
         beta = beta[:ncolZ]
-        y = 0.5 + Z.dot(beta).reshape((-1)) + tau*w + epsilon
+        Zbeta = Z.dot(beta).reshape((-1))
+        sd = np.sqrt(np.sum(Zbeta**2))/(1.*snr)
+        epsilon = sd*np.random.randn(n)
+        y = 0.5 + Zbeta + tau*w + epsilon
     elif link == "nonlinear":
         raise NotImplementedError("Nonlinear w~Z not defined yet.")
     else:
