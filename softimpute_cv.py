@@ -59,7 +59,7 @@ def cv_softimpute(x, grid_len = 15, maxit = 1000, thresh = 1e-5):
       idx_obs = np.argwhere(save_mask[i, :] == 1).reshape((-1))
       j = np.random.choice(idx_obs, 1)
       save_mask[i, j] = 0
-    mmask = np.array(np.random.binomial(np.ones_like(save_mask), save_mask * prop_new_na), dtype=bool)
+    mmask = np.array(np.random.binomial(np.ones_like(save_mask), save_mask * 0.1), dtype=bool)
     xx = x.copy()
     xx[mmask] = np.nan
     return xx, mmask
