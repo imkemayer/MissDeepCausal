@@ -50,8 +50,14 @@ def cv_softimpute(x, grid_len = 15, maxit = 1000, thresh = 1e-5):
   grid_lambda = np.exp(np.linspace(np.log(lambda_min), np.log(lambda_max), grid_len).tolist())
 
   def test_x(x, mask):
-    # generate additional missing values
-    mmask = np.array(np.random.binomial(np.ones_like(mask), mask * .05), dtype=bool)
+    # generate additional missing values 
+    # such that each row has at least 1 observed value (assuming also x.shape[0] > x.shape[1])
+    save_mask = mask.copy()
+    for i in range(x.shape[0]):
+      idx_obs = np.argwhere(save_mask[i, :] == 1).reshape((-1))
+      j = np.random.choice(idx_obs, 1)
+      save_mask[i, j] = 0
+    mmask = np.array(np.random.binomial(np.ones_like(save_mask), save_mask * prop_new_na), dtype=bool)
     xx = x.copy()
     xx[mmask] = np.nan
     return xx, mmask
