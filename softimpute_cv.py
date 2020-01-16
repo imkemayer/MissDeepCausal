@@ -43,7 +43,7 @@ def cv_softimpute(x, grid_len = 15, maxit = 1000, thresh = 1e-5):
   x0 = x.copy()
   x0[~mask] = 0
   # svd on x0
-  d = np.linalg.svd(x0, full_matrices = False, compute_uv = False)
+  d = np.linalg.svd(x0, compute_uv = False)
   # generate grid for lambda values
   lambda_max = np.max(d)
   lambda_min = 0.001*lambda_max
@@ -51,7 +51,7 @@ def cv_softimpute(x, grid_len = 15, maxit = 1000, thresh = 1e-5):
 
   def test_x(x, mask):
     # generate additional missing values
-    mmask = np.array(np.random.binomial(np.ones_like(mask), mask * .2), dtype=bool)
+    mmask = np.array(np.random.binomial(np.ones_like(mask), mask * .05), dtype=bool)
     xx = x.copy()
     xx[mmask] = np.nan
     return xx, mmask
