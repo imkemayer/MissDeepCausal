@@ -7,7 +7,6 @@ def gen_lrmf(n = 1000, d = 3, p = 100, tau = 1, link = "linear",
              seed = 0, x_snr = 2., y_snr = 2.):
 
     x_sd = 1./(x_snr * np.sqrt(n*p))
-    print(x_sd)
     # V is fixed throughout experiments for given n,p,d
     np.random.seed(0)
     V = np.random.randn(p, d) 
@@ -136,7 +135,6 @@ def gen_outcome(Z, w, tau, link = "linear", snr = 2.):
     if link == "linear":
         n = Z.shape[0]
         ncolZ = Z.shape[1]
-        
         beta = np.tile([-0.2, 0.155, 0.5, -1, 0.2], int(np.ceil(ncolZ/5.)))  
         beta = beta[:ncolZ]
         Zbeta = Z.dot(beta).reshape((-1))
