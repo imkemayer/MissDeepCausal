@@ -11,7 +11,7 @@ range_model = ["dlvm", "lrmf"] # data model class
 range_citcio = [False, ] # classical unconfoundedness (on Z) or unconfoundedness despite missingness (on X)
 range_n = [1000, 10000, 100000] # number of observations
 range_p = [10, 100, 1000] # dimension of ambient space
-range_d_over_p = [0.3, 0.6, 0.9] # ratio d over p
+range_d_over_p = [0.002, 0.01, 0.1] # ratio d over p
 range_snr = [1., 5., 10.] # SNR in outcome generation (y0, y1)
 range_prop_miss = [0, 0.1, 0.3, 0.5, 0.7, 0.9] # proportion of MCAR missing values
 range_seed = np.arange(100) # to replicate 100 times each experiment
@@ -49,7 +49,10 @@ for args['model'] in range_model:
     for args['citcio'] in range_citcio:
         for args['n'] in range_n:
             for args['p'] in range_p:
-                range_d = [np.floor(args['p']*x) for x in range_d_over_p]
+                # For given p, create range for d such that 1 < d < p
+                # starting with given ratios for d/p
+                range_d = [np.maximum(2, np.floor(args['p']*x)) for x in range_d_over_p]
+                range_d = np.unique(np.array(range_d)[np.array(range_d)<args['p']].tolist())
                 for args['d'] in range_d:
                     for args['snr'] in range_snr:
                         for args['prop_miss'] in range_prop_miss:
