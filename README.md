@@ -44,9 +44,8 @@ Structure:
 |
 |  config.py: default values for data generation
 |
-|  softimpute.py: WORK IN PROGRESS (SoftImpute implementation from iskandr/fancyimpute)
-|
-|  Rsoftimpute.py: WORK IN PROGRESS (import of R function SoftImpute)
+|  softimpute_cv.py: softimpute with cross-validation on lambda
+
 
 
 
