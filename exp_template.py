@@ -14,7 +14,7 @@ data_parameter_grid = {
   'p': [10, 100, 1000], # dimension of ambient space
   'snr': [1., 5., 10.], # SNR in outcome generation (y0, y1)
   'prop_miss': [0, 0.1, 0.3, 0.5, 0.7, 0.9], # proportion of MCAR missing values
-  'regularize': [False, True] # NOT a DATA parameter but ATE estimation parameter: regularized or regular regr.
+  'regularize': [False, True], # NOT a DATA parameter but ATE estimation parameter: regularized or regular regr.
   'seed': np.arange(100), # to replicate 100 times each experiment
 }
 range_d_over_p = [0.002, 0.01, 0.1] # ratio d over p
