@@ -53,8 +53,13 @@ Structure:
 
 
 ./experiments
-|  exp_template.py: template for calling all functions of main.py on data generated with different sets of parameters 
-|                   (for data generation, for mdc and for mi)
+|  exp_template.py: Template for calling all functions of main.py on data
+|                   generated with different sets of parameters (for data
+|                   generation, for mdc and for mi).
+|                   Parameters for the data generation and models are passed
+|                   through flags, run `python exp_template.py --help` to have
+|                   a full description. By default it executes all possible
+|                   parameters.
 
 ./results
 |  *.csv: Experiment results in form of csv files (containing output of exp_template.py) are saved here
