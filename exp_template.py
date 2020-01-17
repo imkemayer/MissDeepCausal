@@ -14,6 +14,7 @@ data_parameter_grid = {
   'p': [10, 100, 1000], # dimension of ambient space
   'snr': [1., 5., 10.], # SNR in outcome generation (y0, y1)
   'prop_miss': [0, 0.1, 0.3, 0.5, 0.7, 0.9], # proportion of MCAR missing values
+  'regularize': [False, True] # NOT a DATA parameter but ATE estimation parameter: regularized or regular regr.
   'seed': np.arange(100), # to replicate 100 times each experiment
 }
 range_d_over_p = [0.002, 0.01, 0.1] # ratio d over p
@@ -75,7 +76,7 @@ def main():
 
       # On complete data
       t0 = time.time()
-      tau = exp_complete(Z, X, w, y)
+      tau = exp_complete(Z, X, w, y, args['regularize'])
       args['time'] = int(time.time() - t0)
       l_scores.append(np.concatenate((['Z'],
                                       list(args.values()),
@@ -89,7 +90,7 @@ def main():
 
       # Mean-imputation
       t0 = time.time()
-      tau = exp_mean(X_miss, w, y)
+      tau = exp_mean(X_miss, w, y, args['regularize'])
       args['time'] = int(time.time() - t0)
       l_scores.append(np.concatenate((['Mean_imp'],
                                       list(args.values()),
@@ -100,7 +101,7 @@ def main():
       tau = []
       t0 = time.time()
       for m in range_m:
-          tau.append(exp_mi(X_miss, w, y, m=m))
+          tau.append(exp_mi(X_miss, w, y, regularize=args['regularize'], m=m))
       args['time'] = int(time.time() - t0)
       for i in range(len(tau)):
           l_scores.append(np.concatenate((['MI'],
@@ -111,7 +112,7 @@ def main():
 
       # Matrix Factorization
       t0 = time.time()
-      tau = exp_mf(X_miss, w, y)
+      tau = exp_mf(X_miss, w, y, args['regularize'])
       args['time'] = int(time.time() - t0)
       l_scores.append(np.concatenate((['MF'],
                                       list(args.values()),
@@ -134,7 +135,8 @@ def main():
                               sig_prior=mdc_arg['sig_prior'],
                               num_samples_zmul=mdc_arg['num_samples_zmul'],
                               learning_rate=mdc_arg['learning_rate'],
-                              n_epochs=mdc_arg['n_epochs'])
+                              n_epochs=mdc_arg['n_epochs'],
+                              regularize=args['regularize'])
         l_scores.append(np.concatenate((['MDC.process'],
                                         list(args.values()),
                                         [None]*2,

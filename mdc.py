@@ -11,34 +11,34 @@ from miwae import miwae_es
 from softimpute_cv import softimpute, cv_softimpute
 
 
-def exp_complete(z, x, w, y):
+def exp_complete(z, x, w, y, regularize):
     algo_ = [z, x]
     algo_name = ['Z', 'X']
 
     tau = dict()
     for name, zhat in zip(algo_name, algo_):
-        tau_tmp = compute_estimates(zhat, w, y)
+        tau_tmp = compute_estimates(zhat, w, y, regularize)
         tau[name] = list(tau_tmp.values())
 
     return tau
 
-def exp_mean(xmiss, w, y):
+def exp_mean(xmiss, w, y, regularize):
     x_imp_mean = SimpleImputer(strategy = 'mean').fit_transform(xmiss)
 
-    tau_tmp = compute_estimates(x_imp_mean, w, y)
+    tau_tmp = compute_estimates(x_imp_mean, w, y, regularize)
 
     return list(tau_tmp.values())
 
 
-def exp_mf(xmiss, w, y, grid_len=15):
+def exp_mf(xmiss, w, y, regularize, grid_len=15):
     err, grid = cv_softimpute(xmiss, grid_len = grid_len)
     zhat, _ = softimpute(xmiss, lamb = grid[np.argmin(err)])
-    tau_tmp = compute_estimates(zhat, w, y)
+    tau_tmp = compute_estimates(zhat, w, y, regularize)
 
     return np.concatenate((list(tau_tmp.values()), [zhat.shape[1]]))
 
 
-def exp_mi(xmiss, w, y, m=10):
+def exp_mi(xmiss, w, y, regularize, m=10):
 
     res_tau_dr = []
     res_tau_ols = []
@@ -47,7 +47,7 @@ def exp_mi(xmiss, w, y, m=10):
     for i in range(m):
         imp = IterativeImputer(sample_posterior = True, random_state = i)
         x_imp_mice = imp.fit_transform(xmiss)
-        tau_tmp = compute_estimates(x_imp_mice, w, y)
+        tau_tmp = compute_estimates(x_imp_mice, w, y, regularize)
         res_tau_dr.append(tau_tmp['tau_dr'])
         res_tau_ols.append(tau_tmp['tau_ols'])
         res_tau_ols_ps.append(tau_tmp['tau_ols_ps'])
@@ -62,7 +62,8 @@ def exp_mdc(xmiss, w, y,
             sig_prior,
             num_samples_zmul,
             learning_rate,
-            n_epochs):
+            n_epochs,
+            regularize):
 
     tau = dict()
 
@@ -70,7 +71,7 @@ def exp_mdc(xmiss, w, y,
                                           num_samples_zmul=num_samples_zmul,
                                           l_rate=learning_rate, n_epochs=n_epochs)
     # Tau estimated on Zhat=E[Z|X]
-    tau_tmp = compute_estimates(zhat, w, y)
+    tau_tmp = compute_estimates(zhat, w, y, regularize)
     tau['MDC.process'] = list(tau_tmp.values())
 
     # Tau estimated on Zhat^(b), l=1,...,B sampled from posterior
