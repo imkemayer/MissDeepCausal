@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 # This code is an adaptation of the code provided by P.A. Mattei (https://github.com/pamattei/miwae)
+
+from absl import logging
+
 import tensorflow as tf
 import numpy as np
 import scipy.stats
@@ -157,8 +160,8 @@ def miwae(X_miss, d=3, d_miwae=3, h_miwae=128, add_mask=False, sig_prior = 1,
             losstrain = np.array([miwae_loss.eval(feed_dict={x: xhat_0, K:20, xmask: mask})]) # MIWAE bound evaluation
             miwae_loss_train = np.append(miwae_loss_train, -losstrain, axis=0)
             elbo = -float(losstrain)
-            print('Epoch %g' %ep)
-            print('MIWAE likelihood bound  %g' %-losstrain)
+            logging.info(f'Epoch {ep}')
+            logging.info(f'MIWAE likelihood bound  {-losstrain}')
             for i in range(n): # We impute the observations one at a time for memory reasons
                 # # Single imputation:
                 xhat[i, :][~mask[i, :]]=xm.eval(feed_dict={x: xhat_0[i,:].reshape([1, p+pwy]), K:10000, xmask: mask[i, :].reshape([1, p+pwy])})[~mask[i,:].reshape([1,p+pwy])]
@@ -171,7 +174,7 @@ def miwae(X_miss, d=3, d_miwae=3, h_miwae=128, add_mask=False, sig_prior = 1,
                 si, zmu = sess.run([sirz, zmul],feed_dict={x: xhat_0[i,:].reshape([1, p+pwy]), K:10000, xmask: mask[i,:].reshape([1,p+pwy])})
                 zhat_mul[:, i, :] = np.squeeze(zmu[si,:,:]).reshape((num_samples_zmul, d_miwae))
 
-  print('----- miwae training done -----')
+  logging.info('----- miwae training done -----')
   return xhat, zhat, zhat_mul, elbo
 
 
@@ -336,7 +339,7 @@ def miwae_es(X_miss, d=3, d_miwae=3, h_miwae=128, add_mask=False, sig_prior = 1,
           last_improvement += 1
 
         if last_improvement > require_improvement:
-          print('Early stopping after epoch %g.' %epoch)
+          logging.info(f'Early stopping after epoch {epoch}.')
           stop = True
           sess = save_sess
         epoch += 1
@@ -345,8 +348,8 @@ def miwae_es(X_miss, d=3, d_miwae=3, h_miwae=128, add_mask=False, sig_prior = 1,
         losstrain = np.array([miwae_loss.eval(feed_dict={x: xhat_0, K:20, xmask: mask})]) # MIWAE bound evaluation
         miwae_loss_train = np.append(miwae_loss_train, -losstrain, axis=0)
         elbo = -float(losstrain)
-        print('Epoch %g' %epoch)
-        print('MIWAE likelihood bound  %g' %-losstrain)
+        logging.info(f'Epoch {epoch}')
+        logging.info(f'MIWAE likelihood bound {-losstrain}')
         for i in range(n): # We impute the observations one at a time for memory reasons
           # # Single imputation:
           xhat[i, :][~mask[i, :]]=xm.eval(feed_dict={x: xhat_0[i,:].reshape([1, p+pwy]), K:10000, xmask: mask[i, :].reshape([1, p+pwy])})[~mask[i,:].reshape([1,p+pwy])]
@@ -360,5 +363,5 @@ def miwae_es(X_miss, d=3, d_miwae=3, h_miwae=128, add_mask=False, sig_prior = 1,
           zhat_mul[:, i, :] = np.squeeze(zmu[si,:,:]).reshape((num_samples_zmul, d_miwae))
 
 
-  print('----- miwae training done -----')
+  logging.info('----- miwae training done -----')
   return xhat, zhat, zhat_mul, elbo
