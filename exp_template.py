@@ -6,6 +6,9 @@ import numpy as np
 import pandas as pd
 import time
 import itertools
+import csv
+
+import tensorflow as tf
 
 from mdc import exp_mdc, exp_mi, exp_mf, exp_mean, exp_complete
 from generate_data import gen_lrmf, gen_dlvm, ampute
@@ -14,6 +17,7 @@ FLAGS = flags.FLAGS
 
 flags.DEFINE_string('exp_name', 'exp_name_template', 'Experiment name.')
 flags.DEFINE_string('output', None, 'Output path.')
+flags.DEFINE_string('log_path', None, 'Filepath to save the execution state.')
 
 flags.DEFINE_enum('model', None, ['dlvm', 'lrmf'],
                   'Data model class, can be `dlvm` or `lrmf`.')
@@ -44,6 +48,34 @@ l_method_params = ['m','r', 'd_miwae', 'sig_prior',
 ## ATE estimator names
 l_tau = ['tau_dr', 'tau_ols', 'tau_ols_ps', 'tau_resid']
 
+
+def log_res(path, results, keys):
+  # TODO(fraimundo): this is pretty much a copy and paste of log_run, the two
+  # should be merged at some point.
+  write_header = False
+  if not tf.gfile.Exists(path):
+    write_header=True
+
+  with tf.gfile.Open(path, 'a') as f:
+    csv_writer = csv.DictWriter(f, fieldnames=keys)
+    if write_header:
+      csv_writer.writeheader()
+    for res in results:
+      csv_writer.writerow(res)
+
+
+def log_run(path, conf):
+  write_header = False
+  if not tf.gfile.Exists(path):
+    write_header=True
+
+  with tf.gfile.Open(path, 'a') as f:
+    csv_writer = csv.DictWriter(f, fieldnames=conf.keys())
+    if write_header:
+      csv_writer.writeheader()
+    csv_writer.writerow(conf)
+
+
 def main(unused_argv):
 
   # Data generating process parameters
@@ -53,7 +85,7 @@ def main(unused_argv):
       'n': [1000, 10000, 100000] if FLAGS.n_observations is None else [FLAGS.n_observations],
       'p': [10, 100, 1000] if FLAGS.p_ambient is None else [FLAGS.p_ambient],
       'snr': [1., 5., 10.] if FLAGS.snr is None else [FLAGS.snr],
-      'prop_miss': [0, 0.1, 0.3, 0.5, 0.7, 0.9] if FLAGS.prop_miss is None else [FLAGS.prop_miss],
+      'prop_miss': [0.0, 0.1, 0.3, 0.5, 0.7, 0.9] if FLAGS.prop_miss is None else [FLAGS.prop_miss],
       'regularize': [False, True] if FLAGS.regularize is None else [FLAGS.regularize],
       'seed': np.arange(FLAGS.n_seeds),
   }
@@ -83,13 +115,42 @@ def main(unused_argv):
   exp_arguments = [dict(zip(exp_parameter_grid.keys(), vals))
                    for vals in itertools.product(*exp_parameter_grid.values())]
 
+  previous_runs = set()
+  if FLAGS.log_path:
+    if tf.gfile.Exists(FLAGS.log_path):
+      with tf.gfile.Open(FLAGS.log_path, mode='r') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+          # Note: we need to do this conversion because DictReader creates an
+          # OrderedDict, and reads all values as str instead of bool or int.
+          previous_runs.add(str({
+              'model': row['model'],
+              'citcio': row['citcio'] == 'True',
+              'n': int(row['n']),
+              'p': int(row['p']),
+              'snr': float(row['snr']),
+              'prop_miss': float(row['prop_miss']),
+              'regularize': row['regularize'] == 'True',
+              'seed': int(row['seed']),
+              'd': int(row['d']),
+          }))
+  logging.info('Previous runs')
+  logging.info(previous_runs)
+
   for args in exp_arguments:
     # For given p, create range for d such that 1 < d < p
     # starting with given ratios for d/p
     range_d = [np.maximum(2, int(np.floor(args['p']*x))) for x in range_d_over_p]
     range_d = np.unique(np.array(range_d)[np.array(range_d)<args['p']].tolist())
+    exp_time = time.time()
     for args['d'] in range_d:
-      logging.info(f'exp with {args}')
+      res = []
+
+      if str(args) in previous_runs:
+        logging.info(f'Skipped {args}')
+        continue
+      else:
+        logging.info(f'running exp with {args}')
 
       if args['model'] == "lrmf":
         Z, X, w, y, ps = gen_lrmf(n=args['n'], d=args['d'], p=args['p'],
@@ -108,92 +169,82 @@ def main(unused_argv):
       t0 = time.time()
       tau = exp_complete(Z, X, w, y, args['regularize'])
       args['time'] = int(time.time() - t0)
-      l_scores.append(np.concatenate((['Z'],
-                                      list(args.values()),
-                                      [None]*len(l_method_params),
-                                      tau['Z'])))
-      l_scores.append(np.concatenate((['X'],
-                                      list(args.values()),
-                                      [None]*len(l_method_params),
-                                      tau['X'])))
-
+      row = {'Method': 'Z'}
+      row.update(args)
+      row.update(tau['Z'])
+      res.append(row)
+      row = {'Method': 'X'}
+      row.update(args)
+      row.update(tau['X'])
+      res.append(row)
 
       # Mean-imputation
       t0 = time.time()
       tau = exp_mean(X_miss, w, y, args['regularize'])
       args['time'] = int(time.time() - t0)
-      l_scores.append(np.concatenate((['Mean_imp'],
-                                      list(args.values()),
-                                      [None]*len(l_method_params),
-                                      tau)))
+      row = {'Method': 'Mean_imp'}
+      row.update(args)
+      row.update(tau)
+      res.append(row)
 
       # Multiple imputation
-      tau = []
-      t0 = time.time()
       for m in range_m:
-          tau.append(exp_mi(X_miss, w, y, regularize=args['regularize'], m=m))
-      args['time'] = int(time.time() - t0)
-      for i in range(len(tau)):
-          l_scores.append(np.concatenate((['MI'],
-                                          list(args.values()),
-                                          [m],
-                                          [None]*(len(l_method_params)-1),
-                                          tau[i])))
+        t0 = time.time()
+        tau = exp_mi(X_miss, w, y, regularize=args['regularize'], m=m)
+        args['time'] = int(time.time() - t0)
+        row = {'Method': 'MI', 'm': m}
+        row.update(args)
+        row.update(tau)
+        res.append(row)
 
       # Matrix Factorization
       t0 = time.time()
-      tau = exp_mf(X_miss, w, y, args['regularize'])
+      tau, r = exp_mf(X_miss, w, y, args['regularize'])
       args['time'] = int(time.time() - t0)
-      l_scores.append(np.concatenate((['MF'],
-                                      list(args.values()),
-                                      [None],
-                                      [tau[-1]],
-                                      [None]*(len(l_method_params)-2),
-                                      tau[:-1])))
+      row = {'Method': 'MF', 'r': r}
+      row.update(args)
+      row.update(tau)
+      res.append(row)
 
 
       # MissDeepCausal
       mdc_parameter_grid['d_miwae'] = [args['d']+x for x in range_d_offset]
-      t0 = time.time()
 
       mdc_arguments = [dict(zip(mdc_parameter_grid.keys(), vals))
                        for vals in itertools.product(*mdc_parameter_grid.values())]
 
       for mdc_arg in mdc_arguments:
-        tau, params = exp_mdc(X_miss, w, y,
+        t0 = time.time()
+        tau, elbo = exp_mdc(X_miss, w, y,
                               d_miwae=mdc_arg['d_miwae'],
                               sig_prior=mdc_arg['sig_prior'],
                               num_samples_zmul=mdc_arg['num_samples_zmul'],
                               learning_rate=mdc_arg['learning_rate'],
                               n_epochs=mdc_arg['n_epochs'],
                               regularize=args['regularize'])
-        l_scores.append(np.concatenate((['MDC.process'],
-                                        list(args.values()),
-                                        [None]*2,
-                                        params,
-                                        tau['MDC.process'])))
-        l_scores.append(np.concatenate((['MDC.mi'],
-                                        list(args.values()),
-                                        [None]*2,
-                                        params,
-                                        tau['MDC.mi'])))
+        args['time'] = int(time.time() - t0)
+        row = {'Method': 'MDC.process', 'elbo': elbo}
+        row.update(args)
+        row.update(mdc_arg)
+        row.update(tau['MDC.process'])
+        res.append(row)
+        row = {'Method': 'MDC.mi', 'elbo': elbo}
+        row.update(args)
+        row.update(mdc_arg)
+        row.update(tau['MDC.mi'])
+        res.append(row)
 
-      args['time'] = int(time.time() - t0)
 
-
-      score_data = pd.DataFrame(l_scores,
-                                columns=['Method'] + list(args.keys()) + l_method_params + l_tau)
-      score_data.to_csv(output + '_temp')
+      log_res(output, res, ['Method'] + list(args.keys()) + l_method_params + l_tau)
       logging.info('........... DONE')
-      logging.info(f'in {args["time"]} s \n\n')
+      logging.info(f'in {time.time() - exp_time} s \n\n')
 
-  logging.info(f'saving {FLAGS.exp_name} at: {output}')
-  score_data.to_csv(output)
+      if FLAGS.log_path:
+        log_run(FLAGS.log_path, args)
 
   logging.info('*'*20)
   logging.info(f'Exp: {FLAGS.exp_name} succesfully ended.')
   logging.info('*'*20)
-
 
 if __name__ == "__main__":
   app.run(main)
