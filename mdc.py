@@ -18,24 +18,21 @@ def exp_complete(z, x, w, y, regularize):
     tau = dict()
     for name, zhat in zip(algo_name, algo_):
         tau_tmp = compute_estimates(zhat, w, y, regularize)
-        tau[name] = list(tau_tmp.values())
+        tau[name] = tau_tmp
 
     return tau
 
 def exp_mean(xmiss, w, y, regularize):
     x_imp_mean = SimpleImputer(strategy = 'mean').fit_transform(xmiss)
 
-    tau_tmp = compute_estimates(x_imp_mean, w, y, regularize)
-
-    return list(tau_tmp.values())
+    return compute_estimates(x_imp_mean, w, y, regularize)
 
 
 def exp_mf(xmiss, w, y, regularize, grid_len=15):
     err, grid = cv_softimpute(xmiss, grid_len = grid_len)
     zhat, _ = softimpute(xmiss, lamb = grid[np.argmin(err)])
-    tau_tmp = compute_estimates(zhat, w, y, regularize)
 
-    return np.concatenate((list(tau_tmp.values()), [zhat.shape[1]]))
+    return compute_estimates(zhat, w, y, regularize), zhat.shape[1]
 
 
 def exp_mi(xmiss, w, y, regularize, m=10):
@@ -53,8 +50,12 @@ def exp_mi(xmiss, w, y, regularize, m=10):
         res_tau_ols_ps.append(tau_tmp['tau_ols_ps'])
         res_tau_resid.append(tau_tmp['tau_resid'])
 
-    return np.mean(res_tau_dr), np.mean(res_tau_ols), np.mean(res_tau_ols_ps), np.mean(res_tau_resid)
-
+    return {
+        'tau_dr': np.mean(res_tau_dr),
+        'tau_ols': np.mean(res_tau_ols),
+        'tau_ols_ps': np.mean(res_tau_ols_ps),
+        'tau_resid': np.mean(res_tau_resid),
+    }
 
 
 def exp_mdc(xmiss, w, y,
@@ -71,8 +72,7 @@ def exp_mdc(xmiss, w, y,
                                           num_samples_zmul=num_samples_zmul,
                                           l_rate=learning_rate, n_epochs=n_epochs)
     # Tau estimated on Zhat=E[Z|X]
-    tau_tmp = compute_estimates(zhat, w, y, regularize)
-    tau['MDC.process'] = list(tau_tmp.values())
+    tau['MDC.process'] = compute_estimates(zhat, w, y, regularize)
 
     # Tau estimated on Zhat^(b), l=1,...,B sampled from posterior
     res_mul_tau_dr = []
@@ -89,9 +89,11 @@ def exp_mdc(xmiss, w, y,
     res_mul_tau_ols = np.mean(res_mul_tau_ols)
     res_mul_tau_ols_ps = np.mean(res_mul_tau_ols_ps)
     res_mul_tau_resid = np.mean(res_mul_tau_resid)
-    tau['MDC.mi'] = [np.mean(res_mul_tau_dr), np.mean(res_mul_tau_ols),
-                     np.mean(res_mul_tau_ols_ps), np.mean(res_mul_tau_resid)]
+    tau['MDC.mi'] = {
+        'tau_dr': np.mean(res_mul_tau_dr),
+        'tau_ols': np.mean(res_mul_tau_ols),
+        'tau_ols_ps': np.mean(res_mul_tau_ols_ps),
+        'tau_resid': np.mean(res_mul_tau_resid)
+    }
 
-    params = [d_miwae, sig_prior, num_samples_zmul, learning_rate, n_epochs, elbo]
-
-    return tau, params
+    return tau, elbo
