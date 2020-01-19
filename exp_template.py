@@ -17,7 +17,6 @@ FLAGS = flags.FLAGS
 
 flags.DEFINE_string('exp_name', 'exp_name_template', 'Experiment name.')
 flags.DEFINE_string('output', None, 'Output path.')
-flags.DEFINE_string('log_path', None, 'Filepath to save the execution state.')
 
 flags.DEFINE_enum('model', None, ['dlvm', 'lrmf'],
                   'Data model class, can be `dlvm` or `lrmf`.')
@@ -50,30 +49,16 @@ l_tau = ['tau_dr', 'tau_ols', 'tau_ols_ps', 'tau_resid']
 
 
 def log_res(path, results, keys):
-  # TODO(fraimundo): this is pretty much a copy and paste of log_run, the two
-  # should be merged at some point.
   write_header = False
-  if not tf.gfile.Exists(path):
+  if not tf.io.gfile.exists(path):
     write_header=True
 
-  with tf.gfile.Open(path, 'a') as f:
+  with tf.io.gfile.GFile(path, 'a') as f:
     csv_writer = csv.DictWriter(f, fieldnames=keys)
     if write_header:
       csv_writer.writeheader()
     for res in results:
       csv_writer.writerow(res)
-
-
-def log_run(path, conf):
-  write_header = False
-  if not tf.gfile.Exists(path):
-    write_header=True
-
-  with tf.gfile.Open(path, 'a') as f:
-    csv_writer = csv.DictWriter(f, fieldnames=conf.keys())
-    if write_header:
-      csv_writer.writeheader()
-    csv_writer.writerow(conf)
 
 
 def main(unused_argv):
@@ -110,30 +95,28 @@ def main(unused_argv):
   logging.info('*'*20)
   logging.info(f'Starting exp: {FLAGS.exp_name}')
   logging.info('*'*20)
-  l_scores = []
 
   exp_arguments = [dict(zip(exp_parameter_grid.keys(), vals))
                    for vals in itertools.product(*exp_parameter_grid.values())]
 
   previous_runs = set()
-  if FLAGS.log_path:
-    if tf.gfile.Exists(FLAGS.log_path):
-      with tf.gfile.Open(FLAGS.log_path, mode='r') as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-          # Note: we need to do this conversion because DictReader creates an
-          # OrderedDict, and reads all values as str instead of bool or int.
-          previous_runs.add(str({
-              'model': row['model'],
-              'citcio': row['citcio'] == 'True',
-              'n': int(row['n']),
-              'p': int(row['p']),
-              'snr': float(row['snr']),
-              'prop_miss': float(row['prop_miss']),
-              'regularize': row['regularize'] == 'True',
-              'seed': int(row['seed']),
-              'd': int(row['d']),
-          }))
+  if tf.io.gfile.exists(output):
+    with tf.io.gfile.GFile(output, mode='r') as f:
+      reader = csv.DictReader(f)
+      for row in reader:
+        # Note: we need to do this conversion because DictReader creates an
+        # OrderedDict, and reads all values as str instead of bool or int.
+        previous_runs.add(str({
+            'model': row['model'],
+            'citcio': row['citcio'] == 'True',
+            'n': int(row['n']),
+            'p': int(row['p']),
+            'snr': float(row['snr']),
+            'prop_miss': float(row['prop_miss']),
+            'regularize': row['regularize'] == 'True',
+            'seed': int(row['seed']),
+            'd': int(row['d']),
+        }))
   logging.info('Previous runs')
   logging.info(previous_runs)
 
@@ -234,13 +217,9 @@ def main(unused_argv):
         row.update(tau['MDC.mi'])
         res.append(row)
 
-
       log_res(output, res, ['Method'] + list(args.keys()) + l_method_params + l_tau)
       logging.info('........... DONE')
       logging.info(f'in {time.time() - exp_time} s \n\n')
-
-      if FLAGS.log_path:
-        log_run(FLAGS.log_path, args)
 
   logging.info('*'*20)
   logging.info(f'Exp: {FLAGS.exp_name} succesfully ended.')
