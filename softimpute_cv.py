@@ -26,7 +26,7 @@ def softimpute(x, lamb, maxit = 1000, thresh = 1e-5):
     if x.shape[0]*x.shape[1] > 1e6:
       U, d, V = randomized_svd(imp, n_components = np.minimum(200, x.shape[1]))
     else:
-      U, d, V = np.linalg.svd(imp, compute_uv = True)
+      U, d, V = np.linalg.svd(imp, compute_uv = True, full_matrices=False)
     d_thresh = np.maximum(d - lamb, 0)
     rank = (d_thresh > 0).sum()
     d_thresh = d_thresh[:rank]
@@ -37,7 +37,7 @@ def softimpute(x, lamb, maxit = 1000, thresh = 1e-5):
     if converged(imp, res, mask, thresh):
       break
     imp[~mask] = res[~mask]
-    
+
   return U_thresh, res
 
 
@@ -58,7 +58,7 @@ def cv_softimpute(x, grid_len = 15, maxit = 1000, thresh = 1e-5):
   grid_lambda = np.exp(np.linspace(np.log(lambda_min), np.log(lambda_max), grid_len).tolist())
 
   def test_x(x, mask):
-    # generate additional missing values 
+    # generate additional missing values
     # such that each row has at least 1 observed value (assuming also x.shape[0] > x.shape[1])
     save_mask = mask.copy()
     for i in range(x.shape[0]):
@@ -78,4 +78,3 @@ def cv_softimpute(x, grid_len = 15, maxit = 1000, thresh = 1e-5):
     cv_error.append(np.sqrt(np.nanmean((res.flatten() - x.flatten())**2)))
 
   return cv_error, grid_lambda
-  
