@@ -51,7 +51,7 @@ def cv_softimpute(x, grid_len = 15, maxit = 1000, thresh = 1e-5):
   if x.shape[0]*x.shape[1] > 1e6:
       _, d, _ = randomized_svd(x0, n_components = np.minimum(200, x.shape[1]))
   else:
-    d = np.linalg.svd(x0, compute_uv = False)
+    d = np.linalg.svd(x0, compute_uv=False, full_matrices=False)
   # generate grid for lambda values
   lambda_max = np.max(d)
   lambda_min = 0.001*lambda_max
