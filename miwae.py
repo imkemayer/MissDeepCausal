@@ -344,7 +344,7 @@ def miwae_es(X_miss, d=3, d_miwae=3, h_miwae=128, add_mask=False, sig_prior = 1,
           sess = save_sess
         epoch += 1
 
-      if epoch == n_epochs - 1 or stop:
+      if epoch == n_epochs or stop:
         losstrain = np.array([miwae_loss.eval(feed_dict={x: xhat_0, K:20, xmask: mask})]) # MIWAE bound evaluation
         miwae_loss_train = np.append(miwae_loss_train, -losstrain, axis=0)
         elbo = -float(losstrain)
