@@ -137,12 +137,12 @@ def main(unused_argv):
         logging.info(f'running exp with {args}')
 
       if args['model'] == "lrmf":
-        Z, X, w, y, ps = gen_lrmf(n=args['n'], d=args['d'], p=args['p'],
+        Z, X, w, y, ps, _, _ = gen_lrmf(n=args['n'], d=args['d'], p=args['p'],
                                   y_snr=args['snr'], citcio=args['citcio'],
                                   prop_miss=args['prop_miss'],
                                   seed=args['seed'])
       elif args['model'] == "dlvm":
-        Z, X, w, y, ps = gen_dlvm(n=args['n'], d=args['d'], p=args['p'],
+        Z, X, w, y, ps, _, _ = gen_dlvm(n=args['n'], d=args['d'], p=args['p'],
                                   y_snr=args['snr'], citcio=args['citcio'],
                                   prop_miss=args['prop_miss'],
                                   seed=args['seed'])

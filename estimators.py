@@ -147,7 +147,7 @@ def tau_ols_ps(zhat, w, y, regularize=True):
     return tau
 
 
-def compute_estimates(zhat, w, y, regularize=True):
+def compute_estimates(zhat, w, y, regularize=True, nuisance=False):
     """Compute tau_dr, tau_ols, tau_ols_ps, tau_resid 
        on given confounders matrix and w and y."""
     tau_hat = dict()
@@ -163,4 +163,6 @@ def compute_estimates(zhat, w, y, regularize=True):
     y_hat = lr.predict(zhat)
     tau_hat['tau_resid'] = tau_residuals(y, w, y_hat, ps_hat, regularize=regularize)
 
+    if nuisance:
+        return tau_hat, {'ps_hat': ps_hat, 'y0_hat': y0_hat, 'y1_hat': y1_hat}
     return tau_hat

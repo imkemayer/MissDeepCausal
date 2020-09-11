@@ -20,13 +20,13 @@ def gen_lrmf(n = 1000, d = 3, p = 100, tau = 1, link = "linear",
         # generate treatment assignment W
         ps, w = gen_treat(Z, link)
         # generate outcome
-        y = gen_outcome(Z, w, tau, link, y_snr)
+        y, mu0, mu1 = gen_outcome(Z, w, tau, link, y_snr)
     else:
-        ps, w, y = citcio_treat_out(X, prop_miss, seed, link, tau, y_snr)
+        ps, w, y, mu0, mu1 = citcio_treat_out(X, prop_miss, seed, link, tau, y_snr)
     assert y.shape == (n, )
     assert w.shape == (n, )
 
-    return Z, X, w, y, ps
+    return Z, X, w, y, ps, mu0, mu1
 
 # Deep Latent Variable Model (here, we use an MLP)
 def gen_dlvm(n = 1000, d = 3, p = 100, tau = 1, link = "linear", 
@@ -55,13 +55,13 @@ def gen_dlvm(n = 1000, d = 3, p = 100, tau = 1, link = "linear",
         # generate treatment assignment W
         ps, w = gen_treat(Z, link)
         # generate outcome
-        y = gen_outcome(Z, w, tau, link, y_snr)
+        y, mu0, mu1 = gen_outcome(Z, w, tau, link, y_snr)
     else:
-        ps, w, y = citcio_treat_out(X, prop_miss, seed, link, tau, y_snr)
+        ps, w, y, mu0, mu1 = citcio_treat_out(X, prop_miss, seed, link, tau, y_snr)
     assert y.shape == (n, )
     assert w.shape == (n, )
     
-    return Z, X, w, y, ps
+    return Z, X, w, y, ps, mu0, mu1
 
 # Compute expectation and covariance of conditional distribution X given Z
 def get_dlvm_params(z, V, W, a, b, alpha, beta):
@@ -80,9 +80,9 @@ def citcio_treat_out(X, prop_miss, seed, link, tau, snr):
     imp = IterativeImputer()
     X_imp = imp.fit_transform(X_miss)
     ps, w = gen_treat(X_imp, link = link)
-    y = gen_outcome(X_imp, w, tau, link, snr)
+    y, mu0, mu1 = gen_outcome(X_imp, w, tau, link, snr)
 
-    return ps, w, y
+    return ps, w, y, mu0, mu1
 
 # Generate treatment assignment using confounders Z
 def gen_treat(Z, link = "linear"):
@@ -126,11 +126,13 @@ def gen_outcome(Z, w, tau, link = "linear", snr = 2.):
         sd = np.sqrt(np.sum(Zbeta**2))/(1.*snr)
         epsilon = sd*np.random.randn(n)
         y = 0.5 + Zbeta + tau*w + epsilon
+        mu0 = 0.5 + Zbeta
+        mu1 = 0.5 + Zbeta + tau
     elif link == "nonlinear":
         raise NotImplementedError("Nonlinear w~Z not defined yet.")
     else:
         raise ValueError("'link' should be choosed between linear and nonlinear model for y. got %s", link)
-    return y
+    return y, mu0, mu1
 
 # Generate missing values in X such that, on average, X contains n*p*prop_miss missing values
 def ampute(X, prop_miss = 0.1, seed = 0):
