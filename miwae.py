@@ -26,9 +26,10 @@ from sklearn.impute import IterativeImputer
 from sklearn.impute import SimpleImputer
 from sklearn.model_selection import ShuffleSplit
 import os
+import pickle
 
 
-def miwae(X_miss, d=3, d_miwae=3, h_miwae=128, add_mask=False, sig_prior = 1,
+def miwae(X_miss, d_miwae=3, h_miwae=128, add_mask=False, mu_prior=0, sig_prior = 1,
           num_samples_zmul=200, l_rate = 0.0001, n_epochs = 602, add_wy = False, w = None, y = None):
   np.random.seed(1234)
   tf.set_random_seed(1234)
@@ -65,7 +66,7 @@ def miwae(X_miss, d=3, d_miwae=3, h_miwae=128, add_mask=False, sig_prior = 1,
   K= tf.placeholder(tf.int32, shape=[]) # Placeholder for the number of importance weights
 
   # ##########
-  p_z = tfd.MultivariateNormalDiag(loc=tf.zeros(d_miwae, tf.float32),
+  p_z = tfd.MultivariateNormalDiag(loc=mu_prior+tf.zeros(d_miwae, tf.float32),
                                    scale_diag = sig_prior*tf.ones(d_miwae, tf.float32))
 
   # ##########
@@ -179,11 +180,12 @@ def miwae(X_miss, d=3, d_miwae=3, h_miwae=128, add_mask=False, sig_prior = 1,
 
 
 
-def miwae_es(X_miss, d=3, d_miwae=3, h_miwae=128, add_mask=False, sig_prior = 1,
+def miwae_es(X_miss, d_miwae=3, h_miwae=128, add_mask=False, mu_prior=0, sig_prior = 1,
              num_samples_zmul=200, l_rate = 0.0001, n_epochs = 602, add_wy = False, w = None, y = None,
-             require_improvement = 30):
+             require_improvement = 30, save_session = False, session_file = None):
   np.random.seed(1234)
   tf.set_random_seed(1234)
+
 
   n = X_miss.shape[0] # number of observations
   p = X_miss.shape[1] # number of features
@@ -210,15 +212,15 @@ def miwae_es(X_miss, d=3, d_miwae=3, h_miwae=128, add_mask=False, sig_prior = 1,
     pwy = pwy*2
 
   # ##########
-  x = tf.placeholder(tf.float32, shape=[None, p+pwy]) # Placeholder for xhat_0
-  learning_rate = tf.placeholder(tf.float32, shape=[])
+  x = tf.placeholder(tf.float32, shape=[None, p+pwy], name='x') # Placeholder for xhat_0
+  learning_rate = tf.placeholder(tf.float32, shape=[], name='learning_rate')
   batch_size = tf.shape(x)[0]
-  xmask = tf.placeholder(tf.bool, shape=[None, p+pwy])
-  K= tf.placeholder(tf.int32, shape=[]) # Placeholder for the number of importance weights
+  xmask = tf.placeholder(tf.bool, shape=[None, p+pwy], name='xmask')
+  K = tf.placeholder(tf.int32, shape=[], name='K') # Placeholder for the number of importance weights
 
   # ##########
-  p_z = tfd.MultivariateNormalDiag(loc=tf.zeros(d_miwae, tf.float32),
-                                   scale_diag = sig_prior*tf.ones(d_miwae, tf.float32))
+  p_z = tfd.MultivariateNormalDiag(loc=mu_prior+tf.zeros(d_miwae, tf.float32),
+                                   scale_diag = sig_prior*tf.ones(d_miwae, tf.float32), name='p_z')
 
   # ##########
   sigma = "relu"
@@ -227,16 +229,16 @@ def miwae_es(X_miss, d=3, d_miwae=3, h_miwae=128, add_mask=False, sig_prior = 1,
     tfkl.Dense(h_miwae, activation=sigma,kernel_initializer="orthogonal"),
     tfkl.Dense(h_miwae, activation=sigma,kernel_initializer="orthogonal"),
     tfkl.Dense(3*(p+pwy),kernel_initializer="orthogonal") # the decoder will output both the mean, the scale, and the number of degrees of freedoms (hence the 3*p)
-  ])
+  ], name='decoder')
 
   # ##########
-  tiledmask = tf.tile(xmask,[K,1])
-  tiledmask_float = tf.cast(tiledmask,tf.float32)
-  mask_not_float = tf.abs(-tf.cast(xmask,tf.float32))
+  tiledmask = tf.tile(xmask,[K,1], name='tiledmask')
+  tiledmask_float = tf.cast(tiledmask,tf.float32, name='tiledmask_float')
+  mask_not_float = tf.abs(-tf.cast(xmask,tf.float32), name='mask_not_float')
 
-  iota = tf.Variable(np.zeros([1,p+pwy]),dtype=tf.float32)
-  tilediota = tf.tile(iota,[batch_size,1])
-  iotax = x + tf.multiply(tilediota,mask_not_float)
+  iota = tf.Variable(np.zeros([1,p+pwy]),dtype=tf.float32, name='iota')
+  tilediota = tf.tile(iota,[batch_size,1], name='tilediota')
+  iotax = x + tf.multiply(tilediota,mask_not_float, name='iotax')
 
   # ##########
   encoder = tfk.Sequential([
@@ -244,51 +246,57 @@ def miwae_es(X_miss, d=3, d_miwae=3, h_miwae=128, add_mask=False, sig_prior = 1,
     tfkl.Dense(h_miwae, activation=sigma,kernel_initializer="orthogonal"),
     tfkl.Dense(h_miwae, activation=sigma,kernel_initializer="orthogonal"),
     tfkl.Dense(3*d_miwae,kernel_initializer="orthogonal")
-  ])
+  ], name='encoder')
 
   # ##########
   out_encoder = encoder(iotax)
-  q_zgivenxobs = tfd.Independent(distribution=tfd.StudentT(loc=out_encoder[..., :d_miwae], scale=tf.nn.softplus(out_encoder[..., d_miwae:(2*d_miwae)]), df=3 + tf.nn.softplus(out_encoder[..., (2*d_miwae):(3*d_miwae)])))
+  q_zgivenxobs = tfd.Independent(distribution=tfd.StudentT(loc=out_encoder[..., :d_miwae],
+                                                           scale=tf.nn.softplus(out_encoder[..., d_miwae:(2*d_miwae)]),
+                                                           df=3 + tf.nn.softplus(out_encoder[..., (2*d_miwae):(3*d_miwae)])),
+                                 name='q_zgivenxobs')
   zgivenx = q_zgivenxobs.sample(K)
-  zgivenx_flat = tf.reshape(zgivenx,[K*batch_size,d_miwae])
-  data_flat = tf.reshape(tf.tile(x,[K,1]),[-1,1])
+  zgivenx_flat = tf.reshape(zgivenx,[K*batch_size,d_miwae], name='zgivenx_flat')
+  data_flat = tf.reshape(tf.tile(x,[K,1]),[-1,1], name='data_flat')
 
   # ##########
   out_decoder = decoder(zgivenx_flat)
   all_means_obs_model = out_decoder[..., :p+pwy]
-  all_scales_obs_model = tf.nn.softplus(out_decoder[..., (p+pwy):(2*(p+pwy))]) + 0.001
-  all_degfreedom_obs_model = tf.nn.softplus(out_decoder[..., (2*(p+pwy)):(3*(p+pwy))]) + 3
-  all_log_pxgivenz_flat = tfd.StudentT(loc=tf.reshape(all_means_obs_model,[-1,1]),scale=tf.reshape(all_scales_obs_model,[-1,1]),df=tf.reshape(all_degfreedom_obs_model,[-1,1])).log_prob(data_flat)
-  all_log_pxgivenz = tf.reshape(all_log_pxgivenz_flat,[K*batch_size,p+pwy])
+  all_scales_obs_model = tf.add(tf.nn.softplus(out_decoder[..., (p+pwy):(2*(p+pwy))]), 0.001, name='all_scales_obs_model')
+  all_degfreedom_obs_model = tf.add(tf.nn.softplus(out_decoder[..., (2*(p+pwy)):(3*(p+pwy))]), 3, name='all_degfreedom_obs_model')
+  all_log_pxgivenz_flat = tfd.StudentT(loc=tf.reshape(all_means_obs_model,[-1,1]),
+                                       scale=tf.reshape(all_scales_obs_model,[-1,1]),
+                                       df=tf.reshape(all_degfreedom_obs_model,[-1,1])).log_prob(data_flat)
+  all_log_pxgivenz = tf.reshape(all_log_pxgivenz_flat,[K*batch_size,p+pwy], name='all_log_pxgivenz')
 
   # ##########
-  logpxobsgivenz = tf.reshape(tf.reduce_sum(tf.multiply(all_log_pxgivenz[:,0:p_mod],tiledmask_float[:,0:p_mod]),1),[K,batch_size])
+  logpxobsgivenz = tf.reshape(tf.reduce_sum(tf.multiply(all_log_pxgivenz[:,0:p_mod],tiledmask_float[:,0:p_mod]),1),[K,batch_size],
+                              name='logxobsgivenz')
   logpz = p_z.log_prob(zgivenx)
   logq = q_zgivenxobs.log_prob(zgivenx)
 
   # ##########
-  miwae_loss = -tf.reduce_mean(tf.reduce_logsumexp(logpxobsgivenz + logpz - logq,0)) +tf.log(tf.cast(K,tf.float32))
+  miwae_loss = -tf.reduce_mean(tf.reduce_logsumexp(logpxobsgivenz + logpz - logq,0)) +tf.log(tf.cast(K,tf.float32), name='miwae_loss')
   train_miss = tf.train.AdamOptimizer(learning_rate = learning_rate).minimize(miwae_loss)
 
   # ##########
   xgivenz = tfd.Independent(
-        distribution=tfd.StudentT(loc=all_means_obs_model, scale=all_scales_obs_model, df=all_degfreedom_obs_model))
+        distribution=tfd.StudentT(loc=all_means_obs_model, scale=all_scales_obs_model, df=all_degfreedom_obs_model), name='xgivenz')
 
   # ##########
-  imp_weights = tf.nn.softmax(logpxobsgivenz + logpz - logq,0) # these are w_1,....,w_L for all observations in the batch
-  xms = tf.reshape(xgivenz.mean(),[K,batch_size,p+pwy])
-  xm=tf.einsum('ki,kij->ij', imp_weights, xms)
+  imp_weights = tf.nn.softmax(logpxobsgivenz + logpz - logq,0, name='imp_weights') # these are w_1,....,w_L for all observations in the batch
+  xms = tf.reshape(xgivenz.mean(),[K,batch_size,p+pwy], name='xms')
+  xm = tf.einsum('ki,kij->ij', imp_weights, xms, name='xm')
 
   # ##########
-  z_hat = tf.einsum('ki,kij->ij', imp_weights, zgivenx)
+  z_hat = tf.einsum('ki,kij->ij', imp_weights, zgivenx, name='z_hat')
 
   # ##########
-  sir_logits = tf.transpose(logpxobsgivenz + logpz - logq)
+  sir_logits = tf.transpose(logpxobsgivenz + logpz - logq, name='sir_logits')
 #   sirx = tfd.Categorical(logits = sir_logits).sample(num_samples_xmul) # needed if we want to do multiple imputation on x
-  xmul = tf.reshape(xgivenz.sample(), [K, batch_size, p+pwy])
+  xmul = tf.reshape(xgivenz.sample(), [K, batch_size, p+pwy], name='xmul')
 
   sirz = tfd.Categorical(logits = sir_logits).sample(num_samples_zmul)
-  zmul = tf.reshape(zgivenx, [K, batch_size, d_miwae])
+  zmul = tf.reshape(zgivenx, [K, batch_size, d_miwae], name='zmul')
 
   # ##########
 
@@ -307,8 +315,10 @@ def miwae_es(X_miss, d=3, d_miwae=3, h_miwae=128, add_mask=False, sig_prior = 1,
   stop = False
   last_improvement = 0
   elbo = np.nan
+  saver = tf.train.Saver()
   with tf.Session() as sess:
       sess.run(tf.global_variables_initializer())
+      save_sess = sess
       epoch = 0
       while epoch < n_epochs and stop == False:
         #train the model on the traning set by mini batches
@@ -361,7 +371,15 @@ def miwae_es(X_miss, d=3, d_miwae=3, h_miwae=128, add_mask=False, sig_prior = 1,
           # Z|X* sampling:
           si, zmu = sess.run([sirz, zmul],feed_dict={x: xhat_0[i,:].reshape([1, p+pwy]), K:10000, xmask: mask[i,:].reshape([1,p+pwy])})
           zhat_mul[:, i, :] = np.squeeze(zmu[si,:,:]).reshape((num_samples_zmul, d_miwae))
-
+      if save_session:
+        if stop:
+          sess_file_name = session_file + '_dmiwae' + str(d_miwae) + '_sigprior' + str(sig_prior) + '_epochsES'
+        else:
+          sess_file_name = session_file + '_dmiwae' + str(d_miwae) + '_sigprior' + str(sig_prior) + '_epochsMAX'
+        saver.save(sess, sess_file_name)
+        #tf.train.export_meta_graph(sess_file_name + '.meta')
+        with open(sess_file_name + '.pkl', 'wb') as file_data:  # Python 3: open(..., 'wb')
+          pickle.dump([xhat, zhat, zhat_mul, elbo, epoch], file_data)
 
   logging.info('----- miwae training done -----')
-  return xhat, zhat, zhat_mul, elbo
+  return xhat, zhat, zhat_mul, elbo, epoch

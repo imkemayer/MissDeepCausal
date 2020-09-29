@@ -104,7 +104,7 @@ def exp_mdc(xmiss, w, y,
     tau = dict()
     nu = dict()
 
-    xhat, zhat, zhat_mul, elbo = miwae_es(xmiss, d=d_miwae, sig_prior=sig_prior,
+    xhat, zhat, zhat_mul, elbo, _ = miwae_es(xmiss, d_miwae=d_miwae, sig_prior=sig_prior,
                                           num_samples_zmul=num_samples_zmul,
                                           l_rate=learning_rate, n_epochs=n_epochs)
     # Tau estimated on Zhat=E[Z|X]
