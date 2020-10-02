@@ -320,8 +320,12 @@ def main(unused_argv):
                 row = {'Z_cor': pearsonr(Z_test.reshape([args['n'],]), zhat_test.reshape([args['n'],]))[0]}
               else:
                 row = {'Z_cor': np.NaN}
-              row.update({'Z_mmd': mmd(Z_test, zhat_test, beta=1.)})
-              row.update({'Z_rvcoef': compute_rv(Z_test, zhat_test)})
+              if args['d'] == mdc_arg['d_miwae']:
+                  row.update({'Z_mmd': mmd(Z_test, zhat_test, beta=1.)})
+                  row.update({'Z_rvcoef': compute_rv(Z_test, zhat_test)})
+              else:
+                  row.update({'Z_mmd': np.NaN})
+                  row.update({'Z_rvcoef': np.NaN})
               row.update({'X_mse': mean_squared_error(X_test, xhat_test)})
               row.update({'X_mmd': mmd(X_test, xhat_test, beta=1.)})
               row.update({'X_rvcoef': compute_rv(X_test, xhat_test)})
