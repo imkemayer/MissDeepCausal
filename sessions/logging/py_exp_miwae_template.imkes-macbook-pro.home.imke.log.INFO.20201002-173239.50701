@@ -1,0 +1,36 @@
+I1002 17:32:39.005422 4713643456 exp_miwae_template.py:126] ********************
+I1002 17:32:39.005604 4713643456 exp_miwae_template.py:127] Starting exp: test_local
+I1002 17:32:39.005665 4713643456 exp_miwae_template.py:128] ********************
+I1002 17:32:39.006450 4713643456 exp_miwae_template.py:155] Previous runs
+I1002 17:32:39.006515 4713643456 exp_miwae_template.py:156] {"{'model': 'dlvm', 'citcio': False, 'n': 1000, 'p': 5, 'y_snr': 5.0, 'x_snr': 10.0, 'mu_z': 0.0, 'sig_z': 1.0, 'prop_miss': 0.0, 'regularize': False, 'seed': 0, 'd': 1, 'sig_xgivenz': 'fixed'}"}
+I1002 17:32:39.006577 4713643456 exp_miwae_template.py:177] running exp with {'model': 'dlvm', 'citcio': False, 'n': 1000, 'p': 5, 'y_snr': 5.0, 'x_snr': 10.0, 'mu_z': 0.0, 'sig_z': 1.0, 'sig_xgivenz': 'fixed', 'prop_miss': 0.0, 'regularize': False, 'seed': 0, 'd': 1}
+W1002 17:32:39.115731 4713643456 deprecation_wrapper.py:119] From exp_miwae_template.py:222: The name tf.Session is deprecated. Please use tf.compat.v1.Session instead.
+
+W1002 17:32:39.115904 4713643456 deprecation_wrapper.py:119] From exp_miwae_template.py:222: The name tf.reset_default_graph is deprecated. Please use tf.compat.v1.reset_default_graph instead.
+
+W1002 17:32:39.126045 4713643456 deprecation_wrapper.py:119] From exp_miwae_template.py:224: The name tf.train.import_meta_graph is deprecated. Please use tf.compat.v1.train.import_meta_graph instead.
+
+W1002 17:32:39.347932 4713643456 deprecation.py:323] From /Users/imke/opt/anaconda3/envs/mdc/lib/python3.7/site-packages/tensorflow/python/training/saver.py:1276: checkpoint_exists (from tensorflow.python.training.checkpoint_management) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use standard file APIs to check for files with this prefix.
+I1002 17:32:39.348629 4713643456 saver.py:1280] Restoring parameters from ./sessions/dlvm_fixedSigma_n1000_p5_d1_ysnr5.0_xsnr10.0_propNA0.0_seed0_dmiwae1_sigprior1.0
+W1002 17:32:39.410722 4713643456 deprecation_wrapper.py:119] From exp_miwae_template.py:243: The name tf.get_default_graph is deprecated. Please use tf.compat.v1.get_default_graph instead.
+
+I1002 17:32:39.935089 4713643456 exp_miwae_template.py:338] ........... DONE
+I1002 17:32:39.935282 4713643456 exp_miwae_template.py:339] in 0.9287009239196777 s 
+
+
+I1002 17:32:39.935419 4713643456 exp_miwae_template.py:177] running exp with {'model': 'dlvm', 'citcio': False, 'n': 1000, 'p': 5, 'y_snr': 5.0, 'x_snr': 10.0, 'mu_z': 0.0, 'sig_z': 1.0, 'sig_xgivenz': 'fixed', 'prop_miss': 0.0, 'regularize': False, 'seed': 0, 'd': 2, 'training_time': 0}
+W1002 17:32:40.079392 4713643456 deprecation_wrapper.py:119] From /Users/imke/Documents/TraumaMatrix/CausalInference/Simulations/MissDeepCausal/miwae.py:187: The name tf.set_random_seed is deprecated. Please use tf.compat.v1.set_random_seed instead.
+
+W1002 17:32:40.079658 4713643456 deprecation_wrapper.py:119] From /Users/imke/Documents/TraumaMatrix/CausalInference/Simulations/MissDeepCausal/miwae.py:215: The name tf.placeholder is deprecated. Please use tf.compat.v1.placeholder instead.
+
+W1002 17:32:40.302207 4713643456 deprecation.py:323] From /Users/imke/opt/anaconda3/envs/mdc/lib/python3.7/site-packages/tensorflow/python/ops/math_ops.py:2403: add_dispatch_support.<locals>.wrapper (from tensorflow.python.ops.array_ops) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use tf.where in 2.0, which has the same broadcast rule as np.where
+W1002 17:32:40.365174 4713643456 deprecation_wrapper.py:119] From /Users/imke/Documents/TraumaMatrix/CausalInference/Simulations/MissDeepCausal/miwae.py:279: The name tf.train.AdamOptimizer is deprecated. Please use tf.compat.v1.train.AdamOptimizer instead.
+
+W1002 17:32:40.973392 4713643456 deprecation_wrapper.py:119] From /Users/imke/Documents/TraumaMatrix/CausalInference/Simulations/MissDeepCausal/miwae.py:318: The name tf.train.Saver is deprecated. Please use tf.compat.v1.train.Saver instead.
+
+I1002 17:32:42.190009 4713643456 miwae.py:361] Epoch 10
+I1002 17:32:42.190353 4713643456 miwae.py:362] MIWAE likelihood bound [-9.599664]

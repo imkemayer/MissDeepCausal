@@ -48,7 +48,7 @@ flags.DEFINE_float('prop_miss', None, 'Proportion of MCAR missing values.')
 flags.DEFINE_bool('regularize', None, 'Regularize ATE.')
 flags.DEFINE_integer('n_seeds', 100, 'Number of seed replications.')
 flags.DEFINE_float('d_over_p', None, 'Ratio of d over p.')
-flags.DEFINE_integer('d_latent', None, 'Dimension of latent space (specify either `d_over_p` or `d`).')
+flags.DEFINE_multi_integer('d_latent', None, 'Dimension of latent space (specify either `d_over_p` or `d`).')
 flags.DEFINE_float('mu_z', None, 'Expectation of distribution on Z.')
 flags.DEFINE_float('sig_z', None, 'Variance of distribution on Z.')
 flags.DEFINE_enum('sig_xgivenz', None, ['fixed', 'random'],'Fixed or random variance for X|Z=z, can be `fixed` or `random`')
@@ -102,7 +102,7 @@ def main(unused_argv):
      'seed': np.arange(FLAGS.n_seeds),
   }
   range_d_over_p = [0.002, 0.01, 0.1] if FLAGS.d_over_p is None and FLAGS.d_latent is None else [FLAGS.d_over_p]
-  range_d = None if range_d_over_p is not None and FLAGS.d_latent is None else [FLAGS.d_latent]
+  range_d = None if range_d_over_p is not None and FLAGS.d_latent is None else FLAGS.d_latent
 
   # MDC parameters
   range_d_offset = [0, 5, 10] if FLAGS.miwae_d_offset is None else [FLAGS.miwae_d_offset]
