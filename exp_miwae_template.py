@@ -12,8 +12,6 @@ import tensorflow as tf
 import tensorflow_probability as tfp
 tfd = tfp.distributions
 #tf.logging.set_verbosity(tf.logging.ERROR) # to suppress warning and info messages
-import matplotlib.pyplot as plt
-import seaborn as sns
 
 
 from json import dumps
