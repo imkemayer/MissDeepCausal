@@ -1,0 +1,888 @@
+---
+title: "Plots for ICML submission"
+author: ""
+date: ""
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+*Note: for this R Markdown to be compiled properly, the results from the experiments need to be stored in './results/mdc.csv'.*
+
+## Preliminaries
+```{r preliminaries, warning=F, message=F,}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(latex2exp)
+
+
+# Clear any existing variables
+rm(list = ls())
+cbPalette <- rev(c("#000000", "#999999","#E69F00", "#56B4E9",  "#660000", "#CC79A7"))
+tau <- 1
+
+save_plots <- FALSE
+```
+
+```{r helper_functions, echo=F, warning=F, message=F}
+# Define helper functions
+bias <- function(tauhat, tau = 1){
+  return(abs(mean(tauhat)-tau))
+}
+
+sem <- function(x){
+  return(sd(x)/(length(x)-1))
+}
+
+extract_rows <- function(df_, metric_, config1_, config2_, tau_){
+  seeds_set <- seq(0, max(df_$seed), by=1)
+
+  if (tolower(metric_) == "mae") 
+  {
+    res_mae <- df_ %>%
+      filter(seed %in% seeds_set) %>%
+      dplyr::select(-c("time", "r", "learning_rate", "n_epochs", "elbo", "epochs",
+                       "d_miwae", "sig_prior")) %>%
+      group_by(Method, model, n, p, snr, prop_miss, 
+               regularize, d, m,
+               num_samples_zmul) %>%
+      mutate_at(estimators, .funs = funs("mae" =  abs(. - tau))) %>%
+      summarise_at(paste(estimators, "mae", sep="_"), funs(mean, sem))
+    
+  } else if (tolower(metric_) == "mse")
+  {
+    res_mse <- df_ %>%
+      filter(seed %in% seeds_set) %>%
+      dplyr::select(-c("time", "r", "learning_rate", "n_epochs", "elbo", "epochs",
+                       "d_miwae", "sig_prior")) %>%
+      group_by(Method, model, n, p, snr, prop_miss, 
+               regularize, d, m,
+               num_samples_zmul) %>%
+      mutate_at(estimators, .funs = funs("mse" =  (. - tau)^2)) %>%
+      summarise_at(paste(estimators, "mse", sep="_"), funs(mean, sem))
+  } else if (tolower(metric_) == "bias")
+  {
+    res_bias <- df_ %>%
+      filter(seed %in% seeds_set) %>%
+      dplyr::select(-c("time", "r", "learning_rate", "n_epochs", "elbo", "epochs",
+                       "d_miwae", "sig_prior")) %>%
+      group_by(Method, model, n, p, snr, prop_miss, 
+               regularize, d, m,
+               num_samples_zmul) %>%
+      summarise_at(estimators, .funs = funs("bias" = mean)) %>%
+      mutate_at(paste(estimators, "bias", sep="_"), bias)
+  }
+  
+  metric_string <- paste0("res_", tolower(metric_), "$")
+  
+  condition_str <- paste0(paste(paste(paste(metric_string, names(config1_)[which(sapply(config1_, is.character))], sep=''), 
+                                      config1_[which(sapply(config1_, is.character))], sep="=='"),
+                                collapse = "' & "), 
+                          "'")
+  condition_num <- paste(paste(paste(metric_string, names(config1_)[which(sapply(config1_, is.numeric))], sep=''), 
+                               config1_[which(sapply(config1_, is.numeric))], sep="=="), collapse = " & ")
+  
+  condition <- paste0(condition_str, " & ", condition_num, 
+                      " & (", metric_string, "m == ", config2_$m , "| is.na(", metric_string, "m))",
+                      " & (", metric_string, "num_samples_zmul == ", config2_$num_samples_zmul , 
+                      "| is.na(", metric_string, "num_samples_zmul))")
+  rows_subset <- which(eval(parse(text = condition)))
+  return(list(res = eval(parse(text = paste0("res_", tolower(metric_)))),
+              rows_subset = rows_subset,
+              seeds_set = seeds_set))
+}
+```
+
+
+```{r plot_functions, echo=F, warning=F, message=F}
+plot_results <- function(df, metric, config1, config2, tau = 1, xaxis = "n",
+                         plot_type = 1, plot_sem = FALSE){
+  
+  prop_miss_min <- min(df$prop_miss)
+  df_tmp <- df %>%
+            filter(Method %in% c("Z","X"))
+  df <- df %>%
+        filter(!(Method %in% c("Z", "X")))
+  for (pm in unique(df$prop_miss)){
+    tmp <- df_tmp %>%
+              mutate(prop_miss=pm)
+    df <- data.frame(rbind(df, tmp))
+  }
+    
+  tmp <- extract_rows(df, metric, config1, config2, tau)
+  res <- tmp[[1]]
+  rows.subset <- tmp[[2]]
+  seeds_set <- tmp[[3]]
+  if (plot_type == 1){
+    df_plot <- res[rows.subset,]
+    prop_miss_min <- min(df_plot$prop_miss)
+    df_plot <- df_plot %>%
+                  filter((Method %in% c("Z", "X") & prop_miss == prop_miss_min) | !(Method %in% c("Z", "X")))
+    for (pm in setdiff(unique(df_plot$prop_miss), c(prop_miss_min))){
+      tmp <- df_plot %>%
+                filter(Method %in% c("Z", "X") & prop_miss == prop_miss_min)
+      tmp$prop_miss = pm
+      df_plot <- data.frame(rbind(df_plot, tmp))
+    }
+    p_min <- min(df_plot$p)
+    df_plot <- df_plot %>%
+                  filter((Method %in% c("Z") & p == p_min) | !(Method %in% c("Z")))
+    for (pm in setdiff(unique(df_plot$p), c(p_min))){
+      tmp <- df_plot %>%
+                filter(Method %in% c("Z") & p == p_min)
+      tmp$p = pm
+      df_plot <- data.frame(rbind(df_plot, tmp))
+    }
+    
+    if (metric != "bias"){
+      plot_dr <- ggplot(data = df_plot) +
+        geom_line(aes(x = eval(parse(text = xaxis)), 
+                      y = eval(parse(text = paste0("tau_dr_", tolower(metric), "_mean"))), 
+                      color = Method,
+                      linetype = regularize), size = 1.3)+
+        geom_point(aes(x = eval(parse(text = xaxis)), 
+                       y = eval(parse(text = paste0("tau_dr_", tolower(metric), "_mean"))), color = Method))+
+        facet_wrap(vars(prop_miss)) + 
+        ylab(TeX(paste0(metric, '($\\hat{\\tau}_{DR}$)'))) +
+        xlab(TeX(paste0('$', xaxis,'$'))) + 
+        theme(axis.title = element_text(size = 16, face="bold"),
+              axis.text = element_text(size =16),
+              legend.position = "top",
+              legend.key.size = unit(2.2,"line"),
+              legend.text = element_text(size=14, face="bold")) +
+        scale_colour_manual(values=cbPalette)
+      
+      plot_ols <- ggplot(data = df_plot[which(df_plot$Method != "MDC.mi"),]) +         geom_line(aes(x = eval(parse(text = xaxis)), 
+                      y = eval(parse(text = paste0("tau_ols_", tolower(metric), "_mean"))), 
+                      color = Method,
+                      linetype = regularize), size = 1.3)+ 
+                  
+        geom_point(aes(x = eval(parse(text = xaxis)), 
+                       y = eval(parse(text = paste0("tau_ols_", tolower(metric), "_mean"))), color = Method))+
+        facet_wrap(vars(prop_miss)) + 
+        ylab(TeX(paste0(metric, '($\\hat{\\tau}_{OLS}$)'))) + 
+        xlab(TeX(paste0('$',xaxis,'$'))) + 
+        theme(axis.title = element_text(size = 16, face="bold"),
+              axis.text = element_text(size =16),
+              legend.position = "top",
+              legend.key.size = unit(2.2,"line"),
+              legend.text = element_text(size=14, face="bold")) +
+        scale_colour_manual(values=cbPalette[-1])
+    } else {
+      plot_dr <- ggplot(data = df_plot) +
+        geom_line(aes(x = eval(parse(text = xaxis)), 
+                      y = eval(parse(text = paste0("tau_dr_", tolower(metric)))), 
+                      color = Method,
+                      linetype = regularize), size = 1.3)+
+        geom_point(aes(x = eval(parse(text = xaxis)), 
+                       y = eval(parse(text = paste0("tau_dr_", tolower(metric)))), color = Method))+
+        facet_wrap(vars(prop_miss)) + 
+        ylab(TeX(paste0(metric, '($\\hat{\\tau}_{DR}$)'))) +
+        xlab(TeX(paste0('$', xaxis,'$'))) + 
+        theme(axis.title = element_text(size = 16, face="bold"),
+              axis.text = element_text(size =16),
+              legend.position = "top",
+              legend.key.size = unit(2.2,"line"),
+              legend.text = element_text(size=14, face="bold")) +
+        scale_colour_manual(values=cbPalette)
+      
+      plot_ols <- ggplot(data = df_plot[which(df_plot$Method != "MDC.mi"),]) +         geom_line(aes(x = eval(parse(text = xaxis)), 
+                      y = eval(parse(text = paste0("tau_ols_", tolower(metric)))), 
+                      color = Method,
+                      linetype = regularize), size = 1.3)+
+        geom_point(aes(x = eval(parse(text = xaxis)), 
+                       y = eval(parse(text = paste0("tau_ols_", tolower(metric)))), color = Method))+
+        facet_wrap(vars(prop_miss)) + 
+        ylab(TeX(paste0(metric, '($\\hat{\\tau}_{OLS}$)'))) + 
+        xlab(TeX(paste0('$',xaxis,'$'))) + 
+        theme(axis.title = element_text(size = 16, face="bold"),
+              axis.text = element_text(size =16),
+              legend.position = "top",
+              legend.key.size = unit(2.2,"line"),
+              legend.text = element_text(size=14, face="bold")) +
+        scale_colour_manual(values=cbPalette[-1])
+    }
+    if (plot_sem & (metric != "bias")){
+      plot_dr <- plot_dr + 
+        geom_errorbar(aes(x=eval(parse(text = xaxis)), 
+                          ymin=eval(parse(text = paste0("tau_dr_", tolower(metric), "_mean"))) - 1.96*eval(parse(text = paste0("tau_dr_", tolower(metric), "_sem"))), 
+                          ymax=eval(parse(text = paste0("tau_dr_", tolower(metric), "_mean"))) + 1.96*eval(parse(text = paste0("tau_dr_", tolower(metric), "_sem"))),
+                          color=Method), 
+                      width=0.1)
+      
+      plot_ols <- plot_ols + 
+        geom_errorbar(aes(x=eval(parse(text = xaxis)), 
+                          ymin=eval(parse(text = paste0("tau_ols_", tolower(metric), "_mean"))) - 1.96*eval(parse(text = paste0("tau_ols_", tolower(metric), "_sem"))), 
+                          ymax=eval(parse(text = paste0("tau_ols_", tolower(metric), "_mean"))) + 1.96*eval(parse(text = paste0("tau_ols_", tolower(metric), "_sem"))),
+                          color=Method), 
+                      width=0.1)
+    }
+  } else if (plot_type == 2){
+    res$prop_miss <- as.factor(res$prop_miss)
+    
+    df_plot <- res[rows.subset,]
+    df_full <- data.frame(df_plot[which(df_plot$Method %in% c("Z","X")),])
+    df_plot <- data.frame(df_plot[which(!(df_plot$Method %in% c("Z", "X"))),])
+
+    duplicates_full <- duplicated(dplyr::select(df_full,
+                                                setdiff(parameters,
+                                                        c("citcio","seed","time",
+                                                          "r", "d_miwae","sig_prior",
+                                                          "learning_rate", "n_epochs",
+                                                          "elbo","epochs",
+                                                          "prop_miss"))))
+    df_plot <- rbind(df_plot, df_full[!duplicates_full,])
+    
+    p_min <- min(df_plot$p)
+    df_plot <- df_plot %>%
+                  filter((Method %in% c("Z") & p == p_min) | !(Method %in% c("Z")))
+    for (pm in setdiff(unique(df_plot$p), c(p_min))){
+      tmp <- df_plot %>%
+                filter(Method %in% c("Z") & p == p_min)
+      tmp$p = pm
+      df_plot <- data.frame(rbind(df_plot, tmp))
+    }
+    
+    if (metric != "bias"){
+      plot_dr <- ggplot(data = df_plot) +
+        geom_line(aes(x = eval(parse(text = xaxis)), 
+                      y = eval(parse(text = paste0("tau_dr_", tolower(metric), "_mean"))), 
+                      color = Method,
+                      linetype = prop_miss), size = 1.3) +
+        geom_point(aes(x = eval(parse(text = xaxis)), 
+                       y = eval(parse(text = paste0("tau_dr_", tolower(metric), "_mean"))), 
+                       color = Method,
+                       shape = prop_miss),
+                   size = 4.5) + 
+        ylab(TeX(paste0(metric, '($\\hat{\\tau}_{DR}$)'))) +
+        xlab(TeX(paste0('$', xaxis,'$'))) + 
+        theme(axis.title = element_text(size = 16, face="bold"),
+              axis.text = element_text(size =16),
+              legend.position = "top",
+              legend.text = element_text(size=14, face="bold"),
+              legend.key.size = unit(2.2,"line")) +
+        scale_colour_manual(values=cbPalette)
+      
+      plot_ols <- ggplot(data = df_plot[which(df_plot$Method != "MDC.mi"),]) +
+        geom_line(aes(x = eval(parse(text = xaxis)), 
+                      y = eval(parse(text = paste0("tau_ols_", tolower(metric), "_mean"))), 
+                      color = Method,
+                      linetype = prop_miss), size = 1.3) +
+        geom_point(aes(x = eval(parse(text = xaxis)), 
+                       y = eval(parse(text = paste0("tau_ols_", tolower(metric), "_mean"))), 
+                       color = Method,
+                       shape = prop_miss), 
+                   size=4.5) + 
+        ylab(TeX(paste0(metric, '($\\hat{\\tau}_{OLS}$)'))) +
+        xlab(TeX(paste0('$', xaxis,'$'))) + 
+        theme(axis.title = element_text(size = 16, face="bold"),
+              axis.text = element_text(size =16),
+              legend.position = "top",
+              legend.text = element_text(size=14, face="bold"),
+              legend.key.size = unit(2.2,"line")) +
+        scale_colour_manual(values=cbPalette[-1])
+    } else{
+      plot_dr <- ggplot(data = df_plot) +
+        geom_line(aes(x = eval(parse(text = xaxis)), 
+                      y = eval(parse(text = paste0("tau_dr_", tolower(metric)))), 
+                      color = Method,
+                      linetype = prop_miss), size = 1.3)+
+        geom_point(aes(x = eval(parse(text = xaxis)), 
+                       y = eval(parse(text = paste0("tau_dr_", tolower(metric)))), 
+                       color = Method,
+                       shape = prop_miss),
+                   size = 4.5) + 
+        ylab(TeX(paste0(metric, '($\\hat{\\tau}_{DR}$)'))) +
+        xlab(TeX(paste0('$', xaxis,'$'))) + 
+        theme(axis.title = element_text(size = 16, face="bold"),
+              axis.text = element_text(size =16),
+              legend.position = "top",
+              legend.text = element_text(size=14, face="bold"),
+              legend.key.size = unit(2.2,"line")) +
+        scale_colour_manual(values=cbPalette)
+      
+      plot_ols <- ggplot(data = df_plot[which(df_plot$Method != "MDC.mi"),]) +
+        geom_line(aes(x = eval(parse(text = xaxis)), 
+                      y = eval(parse(text = paste0("tau_ols_", tolower(metric)))), 
+                      color = Method,
+                      linetype = prop_miss), size = 1.3) + 
+        geom_point(aes(x = eval(parse(text = xaxis)), 
+                       y = eval(parse(text = paste0("tau_ols_", tolower(metric)))), 
+                       color = Method,
+                       shape = prop_miss),
+                   size=4.5)+ 
+        ylab(TeX(paste0(metric, '($\\hat{\\tau}_{OLS}$)'))) +
+        xlab(TeX(paste0('$', xaxis,'$'))) + 
+        theme(axis.title = element_text(size = 16, face="bold"),
+              axis.text = element_text(size = 16),
+              legend.position = "top",
+              legend.text = element_text(size=14, face="bold"),
+              legend.key.size = unit(2.2,"line")) +
+        scale_colour_manual(values=cbPalette[-1])
+    }
+    if (plot_sem & (metric != "bias")){
+      plot_dr <- plot_dr + 
+        geom_errorbar(aes(x=eval(parse(text = xaxis)), 
+                          ymin=eval(parse(text = paste0("tau_dr_", tolower(metric), "_mean"))) - 1.96*eval(parse(text = paste0("tau_dr_", tolower(metric), "_sem"))), 
+                          ymax=eval(parse(text = paste0("tau_dr_", tolower(metric), "_mean"))) + 1.96*eval(parse(text = paste0("tau_dr_", tolower(metric), "_sem"))),
+                          color=Method), 
+                      width=0.1)
+      plot_ols <- plot_ols + 
+        geom_errorbar(aes(x=eval(parse(text = xaxis)), 
+                          ymin=eval(parse(text = paste0("tau_ols_", tolower(metric), "_mean"))) - 1.96*eval(parse(text = paste0("tau_ols_", tolower(metric), "_sem"))), 
+                          ymax=eval(parse(text = paste0("tau_ols_", tolower(metric), "_mean"))) + 1.96*eval(parse(text = paste0("tau_ols_", tolower(metric), "_sem"))),
+                          color=Method), 
+                      width=0.1)
+    }
+    if (xaxis == "p"){
+      plot_dr <- plot_dr + 
+        scale_x_continuous(breaks=unique(df_plot$p),
+        labels=unique(df_plot$p))
+      plot_ols <- plot_ols + 
+        scale_x_continuous(breaks=unique(df_plot$p),
+        labels=unique(df_plot$p))
+    }
+    if (xaxis == "log(p)"){
+      plot_dr <- plot_dr + 
+        scale_x_continuous(breaks=log(unique(df_plot$p)),
+        labels=paste0("log(",unique(df_plot$p),")"))
+      plot_ols <- plot_ols + 
+        scale_x_continuous(breaks=log(unique(df_plot$p)),
+        labels=paste0("log(",unique(df_plot$p),")"))
+    }
+    if (xaxis == "log(n)"){
+      plot_dr <- plot_dr + 
+        scale_x_continuous(breaks=log(unique(df_plot$n)),
+        labels=paste0("log(",unique(df_plot$n),")"))
+      plot_ols <- plot_ols + 
+        scale_x_continuous(breaks=log(unique(df_plot$n)),
+        labels=paste0("log(",unique(df_plot$n),")"))
+    }
+  }
+  return(list(dr=plot_dr, ols=plot_ols))
+}
+
+
+boxplot_results <- function(df, config1, config2, tau = 1){
+  
+  seeds_set <- seq(0, max(df$seed), by=1)
+  
+  df_plot <- df %>%
+      filter(seed %in% seeds_set) %>%
+      dplyr::select(-c("time", "r", "learning_rate", "n_epochs", "elbo",
+                "d_miwae", "sig_prior")) 
+  
+  
+  condition_str <- paste0(paste(paste(paste("df_plot$", names(config1)[which(sapply(config1, is.character))], sep=''), 
+                                      config1[which(sapply(config1, is.character))], sep="=='"),
+                                collapse = "' & "), 
+                          "'")
+  condition_num <- paste(paste(paste("df_plot$", names(config1)[which(sapply(config1, is.numeric))], sep=''), 
+                               config1[which(sapply(config1, is.numeric))], sep="=="), collapse = " & ")
+  
+  condition <- paste0(condition_str, " & ", condition_num, 
+                      " & (df_plot$m == ", config2$m , "| is.na(df_plot$m))",
+                      " & (df_plot$num_samples_zmul == ", config2$num_samples_zmul , 
+                      "| is.na(df_plot$num_samples_zmul))")
+  rows.subset <- which(eval(parse(text = condition)))
+  
+  df_plot <- df_plot[rows.subset,]
+  
+  prop_miss_min <- min(df_plot$prop_miss)
+  df_tmp <- df_plot %>%
+            filter(Method %in% c("Z","X"))
+  df_plot <- df_plot %>%
+                filter(!(Method %in% c("Z", "X")))
+  for (pm in unique(df_plot$prop_miss)){
+    tmp <- df_tmp %>%
+              mutate(prop_miss=pm)
+    df_plot <- data.frame(rbind(df_plot, tmp))
+  }
+
+  
+  plot_dr <- ggplot(data = df_plot) +
+    geom_boxplot(aes(x = Method, 
+                     y = tau_dr, 
+                     color = Method)) + 
+    geom_hline(aes(yintercept = tau)) +
+    ylab(TeX('$\\hat{\\tau}_{DR}$')) +
+    xlab('') +
+    theme(axis.text.x = element_text(face = "bold", 
+                                     size = 16, angle = 60, hjust = 1),
+          axis.text.y = element_text(size=16),
+          axis.title.y = element_text(size = 16, face="bold"),
+          legend.position = "none",
+          strip.text = element_text(size = 16, face="bold")) +
+    scale_colour_manual(values=cbPalette)
+  
+  plot_ols <- ggplot(data = df_plot[which(df_plot$Method != "MDC.mi"),]) +
+    geom_boxplot(aes(x = Method, 
+                     y = tau_ols, 
+                     color = Method)) + 
+    geom_hline(aes(yintercept = tau)) +
+    facet_wrap(vars(prop_miss),nrow = 2) + 
+    ylab(TeX('$\\hat{\\tau}_{OLS}$')) +
+    xlab('') +
+    theme(axis.text.x = element_text(face = "bold", 
+                                     size = 16, angle = 60, hjust = 1),
+          axis.text.y = element_text(size=16),
+          axis.title.y = element_text(size = 16, face="bold"),
+          legend.position = "none",
+          strip.text = element_text(size = 16, face="bold")) +
+    scale_colour_manual(values=cbPalette[-1])
+  
+  if (length(unique(df_plot$snr)) == 1) {
+    plot_dr <-  plot_dr + 
+                    facet_wrap(vars(prop_miss),nrow = 2)
+    plot_ols <-  plot_ols + 
+                    facet_wrap(vars(prop_miss),nrow = 2)
+  } else {
+    plot_dr <-  plot_dr + 
+                    facet_wrap(vars(snr, prop_miss),nrow = 2)
+    plot_ols <-  plot_ols + 
+                    facet_wrap(vars(snr, prop_miss),nrow = 2)
+  }
+  return(list(dr=plot_dr, ols=plot_ols))
+}
+
+```
+
+```{r save_functions, echo=F}
+save_all_plots <- function(plots_mse=NULL, plots_mae=NULL, plots_bias=NULL, 
+                           configA, configB, path = './figures/'){
+  if (!is.null(plots_mse)){
+    ggsave(plot=plots_mse$dr, file = paste0('./figures/', 
+                paste(paste(names(configA), configA, sep = ''), collapse = '_'),
+                '_',
+                paste(paste(names(configB), configB, sep = ''), collapse = '_'),
+                "_dr_mse.eps"), 
+         width=11, height=8.5)
+    ggsave(plot=plots_mse$ols, file = paste0('./figures/', 
+              paste(paste(names(configA), configA, sep = ''), collapse = '_'),
+              '_',
+              paste(paste(names(configB), configB, sep = ''), collapse = '_'),
+              "_ols_mse.eps"),
+       width=11, height=8.5)
+  }
+  if (!is.null(plots_mae)){
+    ggsave(plot=plots_mae$dr, file = paste0('./figures/', 
+                paste(paste(names(configA), configA, sep = ''), collapse = '_'),
+                '_',
+                paste(paste(names(configB), configB, sep = ''), collapse = '_'),
+                "_dr_mae.eps"), 
+         width=11, height=8.5)
+    ggsave(plot=plots_mae$ols, file = paste0('./figures/', 
+              paste(paste(names(configA), configA, sep = ''), collapse = '_'),
+              '_',
+              paste(paste(names(configB), configB, sep = ''), collapse = '_'),
+              "_ols_mae.eps"),
+           width=11, height=8.5)
+  }
+  if (!is.null(plots_bias)){
+    ggsave(plot=plots_bias$dr, file = paste0('./figures/', 
+                  paste(paste(names(configA), configA, sep = ''), collapse = '_'),
+                  '_',
+                  paste(paste(names(configB), configB, sep = ''), collapse = '_'),
+                  "_dr_bias.eps"),
+           width=11, height=8.5)
+    ggsave(plot=plots_bias$ols, file = paste0('./figures/', 
+                  paste(paste(names(configA), configA, sep = ''), collapse = '_'),
+                  '_',
+                  paste(paste(names(configB), configB, sep = ''), collapse = '_'),
+                  "_ols_bias.eps"),
+           width=11, height=8.5)
+  }
+}
+
+save_all_boxplots <- function(boxplots, 
+                              configA, configB, path = './figures/'){
+
+  ggsave(boxplots$dr, file = paste0('./figures/', 
+                paste(paste(names(configA), configA, sep = ''), collapse = '_'),
+                '_',
+                paste(paste(names(configB), configB, sep = ''), collapse = '_'),
+                "_dr_boxplot.eps"),
+         width=11, height=8.5)
+  
+  ggsave(boxplots$ols, file = paste0('./figures/', 
+              paste(paste(names(configA), configA, sep = ''), collapse = '_'),
+              '_',
+              paste(paste(names(configB), configB, sep = ''), collapse = '_'),
+              "_ols_boxplot.eps"),
+       width=11, height=8.5)
+}
+
+```
+
+## Prepare results
+
+For MDC.mi and MDC.process, we need to extract the results corresponding to the highest ELBO.
+
+```{r, echo=F}
+if (!file.exists("./results/mdc_filtered.csv")){
+  df_results <- read.csv("./results/mdc.csv", header = TRUE)[,-1]
+  parameters <- colnames(df_results)[1:(dim(df_results)[2]-4)]
+  estimators <- colnames(df_results)[(dim(df_results)[2]-3):(dim(df_results)[2])]
+  
+
+  df_results$tau <- 1
+  parameters <- colnames(df_results)[1:(dim(df_results)[2]-5)]
+  estimators <- colnames(df_results)[(dim(df_results)[2]-4):(dim(df_results)[2]-1)]
+  
+  configs <- unique(df_results[,setdiff(parameters, c(estimators, 
+                                                      "citcio", "tau", "r", "m",
+                                                      "elbo", "time",
+                                                      "sig_prior", "d_miwae", "epochs", 
+                                                      "n_epochs", "learning_rate"))])
+  
+  configs[,c("Method", "model", 
+             "regularize")] <- apply(configs[,c("Method", "model", 
+                                                "regularize")],2, 
+                                     as.character)
+  
+  df_results[,c("Method", "model", 
+             "regularize")] <- apply(df_results[,c("Method", "model", 
+                                                "regularize")],2, 
+                                     as.character)
+  
+  ############
+  # Select MDC results with highest ELBO, 
+  # the results for the other methods are simly copied into df_new
+  configs <- configs[which(configs$Method %in% c("MDC.mi", "MDC.process")),]
+  df_tmp <- df_results[which(df_results$Method %in% c("MDC.mi", "MDC.process")), ]
+  df_new_elbo <- df_results[which(!(df_results$Method %in% c("MDC.mi", "MDC.process"))), ]
+  
+  for (i in 1:dim(configs)[1]){
+    if (i%%100 == 0) { 
+      print(i)
+    }
+    conf <- configs[i,]
+    condition_na <- ""
+    if (is.na(conf$num_samples_zmul)){
+      conf <- dplyr::select(conf, -c("num_samples_zmul"))
+      condition_na <- " & is.na(df_tmp$num_samples_zmul)"
+    }
+    condition_str <- paste0(paste(paste(paste("df_tmp$", names(conf)[which(sapply(conf, is.character))], sep=''), 
+                                  conf[which(sapply(conf, is.character))], sep="=='"),
+                                  collapse = "' & "), 
+                            "'")
+    condition_num <- paste(paste(paste("df_tmp$", names(conf)[which(sapply(conf, is.numeric))], sep=''), 
+                                 conf[which(sapply(conf, is.numeric))], sep="=="), collapse = " & ")
+    condition <- paste0(condition_str, " & ", condition_num, condition_na)
+    rows.subset <- which(eval(parse(text = condition)))
+    tmp_elbo <- df_tmp[rows.subset,] %>%
+                  group_by(Method, seed) %>%
+                  filter(elbo == max(elbo)) %>% 
+                  ungroup() %>%
+                  data.frame()
+    
+    df_new_elbo <- rbind(df_new_elbo, data.frame(tmp_elbo))
+    
+    # remove current cases from df_tmp data
+    df_tmp <- df_tmp[setdiff(1:dim(df_tmp)[1], rows.subset),]
+  }
+  
+  write.csv(df_new_elbo, './results/mdc_filtered.csv')
+  df_results <- df_new_elbo
+  } else {
+  df_results <- read.csv("./results/mdc_filtered.csv", header = TRUE)[,-1]
+  df_results <- df_results[which(df_results$n < 1e5),]
+  parameters <- colnames(df_results)[1:(dim(df_results)[2]-5)]
+  estimators <- colnames(df_results)[(dim(df_results)[2]-4):(dim(df_results)[2]-1)]
+  
+  configs <- unique(df_results[,setdiff(parameters, c(estimators, "citcio", "tau", "r", "elbo", "time", "seed"))])
+  
+  configs[,c("Method", "model", 
+             "regularize")] <- apply(configs[,c("Method", "model", 
+                                                "regularize")],2, 
+                                     as.character)
+}
+
+```
+
+For the plots, we order the methods in alphabetical order.
+```{r reorder_results}
+df_results$Method <- as.character(df_results$Method)
+df_results <- df_results[sort(df_results$Method,index.return=T)[[2]],]
+df_results$Method <- as.factor(df_results$Method)
+
+df_results <- df_results[which(!(df_results$Method == "MDC.process" & !is.na(df_results$num_samples_zmul))),]
+```
+
+
+## Regression adjustment
+
+### Paper
+
+Corresponds to Figure 3 in the paper.
+
+```{r}
+configA <- configB <- c()
+configA$n <- 10000
+configA$p <- 100
+configA$d <- 2
+configA$snr <- 10
+configA$model <- "dlvm"
+configA$regularize <- "False"
+configB$m <- 20
+configB$num_samples_zmul <- 500
+
+configA <- data.frame(configA)
+configA$model <- as.character(configA$model)
+configA$regularize <- as.character(configA$regularize)
+configB <- data.frame(configB)
+
+boxplots <- boxplot_results(df_results[which(df_results$Method != "Mean_imp"),], 
+                            configA, configB)
+
+boxplots$ols
+```
+
+```{r, echo=F, warning=F}
+if (save_plots){
+  save_all_boxplots(boxplots, configA, configB)
+}
+```
+
+Corresponds to Figure 4 in the paper
+
+```{r}
+configA <- configB <-  c()
+configA$n <- 10000
+configA$snr <- 10
+configA$d <- 2
+configA$model <- "dlvm"
+configA$regularize <- "False"
+configB$m <- 20
+configB$num_samples_zmul <- 500
+
+configA <- data.frame(configA)
+configA$model <- as.character(configA$model)
+configA$regularize <- as.character(configA$regularize)
+configB <- data.frame(configB)
+
+xaxis <- "p"
+plot_sem <- F
+df <- df_results[which(df_results$p < 1000), ]
+
+
+plots_mse <- plot_results(df[which(df$Method != "Mean_imp"),], 
+                          "mse", configA, configB,
+                          xaxis = xaxis,
+                          plot_type = 2,
+                          plot_sem = plot_sem)
+
+plots_mse$ols
+```
+
+```{r, echo=F, warning=F}
+if (save_plots){
+  save_all_plots(plots_mse, configA=configA, configB=configB)
+}
+```
+
+### Supplementary material
+
+Corresponds to Figure 1 in the Supplementary Material
+```{r}
+configA <- configB <-  c()
+configA$p <- 100
+configA$snr <- 10
+configA$d <- 2
+configA$model <- "dlvm"
+configA$regularize <- "False"
+configB$m <- 20
+configB$num_samples_zmul <- 500
+
+configA <- data.frame(configA)
+configA$model <- as.character(configA$model)
+configA$regularize <- as.character(configA$regularize)
+configB <- data.frame(configB)
+
+xaxis <- "log(n)"
+plot_sem <- F
+df <- df_results[which(df_results$p < 1000), ]
+
+
+plots_mse <- plot_results(df[which(df$Method != "Mean_imp"),], 
+                          "mse", configA, configB,
+                          xaxis = xaxis,
+                          plot_type = 2,
+                          plot_sem = plot_sem)
+
+plots_mse$ols
+```
+
+```{r, echo=F, warning=F}
+if (save_plots){
+  save_all_plots(plots_mse, configA=configA, configB=configB)
+}
+```
+
+Corresponds to Figure 2 in the Supplementary Material
+```{r}
+configA <- configB <- c()
+configA$n <- 10000
+configA$p <- 100
+configA$d <- 2
+configA$snr <- 10
+configA$model <- "lrmf"
+configA$regularize <- "False"
+configB$m <- 20
+configB$num_samples_zmul <- 500
+
+configA <- data.frame(configA)
+configA$model <- as.character(configA$model)
+configA$regularize <- as.character(configA$regularize)
+configB <- data.frame(configB)
+
+boxplots <- boxplot_results(df_results[which(df_results$Method != "Mean_imp"),], 
+                            configA, configB)
+
+boxplots$ols
+```
+
+```{r, echo=F, warning=F}
+if (save_plots){
+  save_all_boxplots(boxplots, configA, configB)
+}
+```
+
+
+## Doubly robust estimation
+
+### Paper
+
+Corresponds to Figure 5 in the paper
+
+```{r}
+configA <- configB <- c()
+configA$n <- 10000
+configA$p <- 1000
+configA$d <- 2
+configA$snr <- 10
+configA$model <- "lrmf"
+configA$regularize <- "True"
+configB$m <- 20
+configB$num_samples_zmul <- 500
+
+configA <- data.frame(configA)
+configA$model <- as.character(configA$model)
+configA$regularize <- as.character(configA$regularize)
+configB <- data.frame(configB)
+
+boxplots <- boxplot_results(df_results[which(df_results$Method != "Mean_imp"),], 
+                            configA, configB)
+
+boxplots$dr
+```
+
+```{r, echo=F, warning=F}
+if (save_plots){
+  save_all_boxplots(boxplots, configA, configB)
+}
+```
+
+Corresponds to Figure 6 in the paper
+
+```{r}
+configA <- configB <- c()
+configA$n <- 10000
+configA$p <- 1000
+configA$d <- 2
+configA$snr <- 10
+configA$model <- "dlvm"
+configA$regularize <- "True"
+configB$m <- 20
+configB$num_samples_zmul <- 500
+
+configA <- data.frame(configA)
+configA$model <- as.character(configA$model)
+configA$regularize <- as.character(configA$regularize)
+configB <- data.frame(configB)
+
+boxplots <- boxplot_results(df_results[which(df_results$Method != "Mean_imp"),], 
+                            configA, configB)
+
+boxplots$dr
+```
+
+```{r, echo=F, warning=F}
+if (save_plots){
+  save_all_boxplots(boxplots, configA, configB)
+}
+```
+
+Corresponds to Figure 7 in the paper
+```{r}
+configA <- configB <-  c()
+configA$n <- 10000
+configA$snr <- 10
+configA$d <- 2
+configA$model <- "dlvm"
+configA$regularize <- "True"
+configB$m <- 20
+configB$num_samples_zmul <- 500
+
+configA <- data.frame(configA)
+configA$model <- as.character(configA$model)
+configA$regularize <- as.character(configA$regularize)
+configB <- data.frame(configB)
+
+xaxis <- "log(p)"
+plot_sem <- F
+
+plots_mse <- plot_results(df_results[which(df_results$Method != "Mean_imp"),], 
+                          "mse", configA, configB,
+                          xaxis = xaxis,
+                          plot_type = 2,
+                          plot_sem = plot_sem)
+
+plots_mse$dr
+```
+
+```{r, echo=F, warning=F}
+if (save_plots){
+  save_all_plots(plots_mse, configA=configA, configB=configB)
+}
+```
+
+### Supplementary Material
+
+Corresponds to Figure 3 in the Supplementary Material
+
+```{r}
+configA <- configB <-  c()
+configA$p <- 1000
+configA$snr <- 10
+configA$d <- 2
+configA$model <- "dlvm"
+configA$regularize <- "True"
+configB$m <- 20
+configB$num_samples_zmul <- 500
+
+configA <- data.frame(configA)
+configA$model <- as.character(configA$model)
+configA$regularize <- as.character(configA$regularize)
+configB <- data.frame(configB)
+
+xaxis <- "log(n)"
+plot_sem <- F
+
+plots_mse <- plot_results(df_results[which(df_results$Method != "Mean_imp"),], 
+                          "mse", configA, configB,
+                          xaxis = xaxis,
+                          plot_type = 2,
+                          plot_sem = plot_sem)
+
+plots_mse$dr
+```
+
+```{r, echo=F, warning=F}
+if (save_plots){
+  save_all_plots(plots_mse, configA=configA, configB=configB)
+}
+```
