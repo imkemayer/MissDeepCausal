@@ -60,11 +60,12 @@ def gen_lrmf(n = 1000, d = 3, p = 100, tau = 1, link = "linear",
     return Z, X, w, y, ps, mu0, mu1
 
 # Deep Latent Variable Model (here, we use an MLP)
-def gen_dlvm(n = 1000, d = 3, p = 100, tau = 1, link = "linear",
+def gen_dlvm(n=1000, d=3, p=100, tau=1, link="linear",
              citcio = False, prop_miss = 0,
-             seed = 0,
-             h = 5, y_snr = 2.,
-             mu_z=0, sig_z=1):
+             seed=0,
+             h=5, x_snr=5., y_snr=2.,
+             mu_z=0, sig_z=1,
+             sig_xgivenz='random'):
 
     # V, W, a, b, alpha, beta are fixed throughout replications for fixed n, p, d, h
     np.random.seed(0)
@@ -80,6 +81,9 @@ def gen_dlvm(n = 1000, d = 3, p = 100, tau = 1, link = "linear",
     X = np.empty([n, p])
     for i in range(n):
         mu, Sigma = get_dlvm_params(Z[i,:].reshape(d, 1), V, W, a, b, alpha, beta)
+        if sig_xgivenz == 'fixed':
+            x_sd = 1./(x_snr * np.sqrt(n*p))
+            Sigma = x_sd*np.identity(mu.shape[0])
         X[i,:] = np.random.multivariate_normal(mu, Sigma, 1)
     assert X.shape == (n, p)
 
