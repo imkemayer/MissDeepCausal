@@ -372,10 +372,11 @@ def miwae_es(X_miss, d_miwae=3, h_miwae=128, add_mask=False, mu_prior=0, sig_pri
           si, zmu = sess.run([sirz, zmul],feed_dict={x: xhat_0[i,:].reshape([1, p+pwy]), K:10000, xmask: mask[i,:].reshape([1,p+pwy])})
           zhat_mul[:, i, :] = np.squeeze(zmu[si,:,:]).reshape((num_samples_zmul, d_miwae))
       if save_session:
-        if stop:
-          sess_file_name = session_file + '_dmiwae' + str(d_miwae) + '_sigprior' + str(sig_prior) + '_epochsES'
-        else:
-          sess_file_name = session_file + '_dmiwae' + str(d_miwae) + '_sigprior' + str(sig_prior) + '_epochsMAX'
+        #if stop:
+        #  sess_file_name = session_file + '_dmiwae' + str(d_miwae) + '_sigprior' + str(sig_prior) + '_epochsES'
+        #else:
+        #  sess_file_name = session_file + '_dmiwae' + str(d_miwae) + '_sigprior' + str(sig_prior) + '_epochsMAX'
+        sess_file_name = session_file + '_dmiwae' + str(d_miwae) + '_sigprior' + str(sig_prior)
         saver.save(sess, sess_file_name)
         #tf.train.export_meta_graph(sess_file_name + '.meta')
         with open(sess_file_name + '.pkl', 'wb') as file_data:  # Python 3: open(..., 'wb')
