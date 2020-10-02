@@ -112,3 +112,6 @@ csv/
 
 # automatically generated figures
 Figures/
+
+# Sandbox notebooks
+Notebooks/
