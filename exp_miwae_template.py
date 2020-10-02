@@ -102,7 +102,7 @@ def main(unused_argv):
      'seed': np.arange(FLAGS.n_seeds),
   }
   range_d_over_p = [0.002, 0.01, 0.1] if FLAGS.d_over_p is None and FLAGS.d_latent is None else [FLAGS.d_over_p]
-  range_d = None if FLAGS.d_over_p is not None else [FLAGS.d_latent]
+  range_d = None if range_d_over_p is not None and FLAGS.d_latent is None else [FLAGS.d_latent]
 
   # MDC parameters
   range_d_offset = [0, 5, 10] if FLAGS.miwae_d_offset is None else [FLAGS.miwae_d_offset]
