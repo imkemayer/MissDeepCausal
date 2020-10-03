@@ -65,7 +65,8 @@ flags.DEFINE_float('miwae_learning_rate', None, 'MIWAE learning rate.')
 flags.DEFINE_integer('miwae_n_epochs', None,
                      'Number of training epochs for MIWAE.')
 
-flags.DEFINE_integer('n_test_seeds', 10, 'Number of seed replications per trained model.')
+flags.DEFINE_integer('n_test_seeds', 10, 'Number of test sets replications per trained model.')
+flags.DEFINE_bool('save_test_data', None, 'Save estimated Zs and Xs from test sets.')
 
 # Column names
 ## Metrics
@@ -116,6 +117,7 @@ def main(unused_argv):
   }
 
   test_seeds = np.arange(FLAGS.n_test_seeds)+1000
+  save_test_data = True if FLAGS.save_test_data is None else FLAGS.save_test_data
 
 
   # Experiment and output file name
@@ -311,8 +313,9 @@ def main(unused_argv):
                                                              'xmask:0': mask_test[i,:].reshape([1,args['p']])})
                   zhat_mul_test[:, i, :] = np.squeeze(zmu[si,:,:]).reshape((mdc_arg['num_samples_zmul'], mdc_arg['d_miwae']))
 
-                with open(session_file_complete + '_testset_eval'+str(test_seed)+'.pkl', 'wb') as file_data:  # Python 3: open(..., 'wb')
-                  pickle.dump([xhat_test, zhat_test, zgivenx_test, zhat_mul_test], file_data)
+                if save_test_data:
+                    with open(session_file_complete + '_testset_eval'+str(test_seed)+'.pkl', 'wb') as file_data:  # Python 3: open(..., 'wb')
+                      pickle.dump([xhat_test, zhat_test, zgivenx_test, zhat_mul_test], file_data)
 
               evaluation_time = int(time.time() - t0)
 
