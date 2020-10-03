@@ -334,6 +334,7 @@ def main(unused_argv):
               row.update({'X_rvcoef': compute_rv(X_test, xhat_test)})
               row.update(args)
               row.update(mdc_arg)
+              row.update({'epochs': epochs})
               row.update({'test_seed': test_seed})
               row.update({'evaluation_time': evaluation_time})
               res.append(row)
@@ -341,7 +342,7 @@ def main(unused_argv):
 
 
       log_res(output, res,
-              l_metrics + list(args.keys()) + list(mdc_arg.keys()) + ['test_seed', 'evaluation_time'])
+              l_metrics + list(args.keys()) + list(mdc_arg.keys()) + ['epochs', 'test_seed', 'evaluation_time'])
       logging.info('........... DONE')
       logging.info(f'in {time.time() - exp_time} s \n\n')
 
