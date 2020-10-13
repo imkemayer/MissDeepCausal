@@ -225,8 +225,8 @@ def main(unused_argv):
           if len(tmp)>0:
             new_saver = tf.train.import_meta_graph(session_file_complete + '.meta')
             new_saver.restore(sess, session_file_complete)
-            with open(session_file_complete+'.pkl', 'rb') as f:
-                xhat, zhat, zhat_mul, elbo, epochs = pickle.load(f)
+            #with open(session_file_complete+'.pkl', 'rb') as f:
+            #    xhat, zhat, zhat_mul, elbo, epochs = pickle.load(f)
           else:
             xhat, zhat, zhat_mul, elbo, epochs = miwae_es(X_miss,
                                                           d_miwae=mdc_arg['d_miwae'],
@@ -239,6 +239,9 @@ def main(unused_argv):
                                                           session_file = session_file)
             new_saver = tf.train.import_meta_graph(session_file_complete + '.meta')
             new_saver.restore(sess, session_file_complete)#tf.train.latest_checkpoint('./'))
+            with open(session_file_complete + '.pkl', 'wb') as file_data:  # Python 3: open(..., 'wb')
+              pickle.dump([xhat, zhat, zhat_mul, elbo, epochs], file_data)
+
           args['training_time'] = int(time.time() - t0)
 
           # Evaluate performance of trained model on new testsets
