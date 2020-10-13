@@ -299,7 +299,7 @@ def main(unused_argv):
                 xhat_test = np.copy(x_test_imp0)
                 zhat_test = np.zeros([n_test,mdc_arg['d_miwae']])
                 zgivenx_test = np.tile(zhat_test, [mdc_arg['num_samples_zmul'], 1, 1])
-                zhat_mul_test = np.tile(zhat, [mdc_arg['num_samples_zmul'], 1, 1])
+                zhat_mul_test = np.tile(zhat_test, [mdc_arg['num_samples_zmul'], 1, 1])
 
                 for i in range(n_test):
                   zgivenx_test[:, i, :] = np.squeeze(zgivenx.eval(session=sess, feed_dict={'x:0': x_test_imp0[i,:].reshape([1, args['p']]),
