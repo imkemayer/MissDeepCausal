@@ -219,7 +219,7 @@ def main(unused_argv):
           session_file_complete = session_file + \
                                   '_dmiwae' + str(mdc_arg['d_miwae']) + \
                                   '_sigprior' + str(mdc_arg['sig_prior'])
-
+          epochs=-1
           tmp = glob.glob(session_file_complete+'.*')
           sess = tf.Session(graph=tf.reset_default_graph())
           if len(tmp)>0:
