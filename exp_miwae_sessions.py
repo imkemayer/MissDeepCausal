@@ -228,8 +228,6 @@ def main(unused_argv):
             with open(session_file_complete + '.pkl', 'wb') as file_data:  # Python 3: open(..., 'wb')
               pickle.dump([xhat, zhat, zhat_mul, elbo, epochs], file_data)
 
-          exp_time = int(time.time() - t0)
-
 
       logging.info('........... DONE')
       logging.info(f'in {time.time() - exp_time} s \n\n')
