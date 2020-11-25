@@ -1,6 +1,7 @@
 # Experiments results
 results/*.csv
 results/*.csv_temp
+sessions/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
