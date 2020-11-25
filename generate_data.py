@@ -65,7 +65,8 @@ def gen_dlvm(n=1000, d=3, p=100, tau=1, link="linear",
              seed=0,
              h=5, x_snr=5., y_snr=2.,
              mu_z=0, sig_z=1,
-             sig_xgivenz='random'):
+             sig_xgivenz='random',
+             verbose=False):
 
     # V, W, a, b, alpha, beta are fixed throughout replications for fixed n, p, d, h
     np.random.seed(0)
@@ -83,7 +84,12 @@ def gen_dlvm(n=1000, d=3, p=100, tau=1, link="linear",
         mu, Sigma = get_dlvm_params(Z[i,:].reshape(d, 1), V, W, a, b, alpha, beta)
         if sig_xgivenz == 'fixed':
             x_sd = 1./(x_snr * np.sqrt(n*p))
-            Sigma = x_sd*np.identity(mu.shape[0])
+            Sigma = x_sd**2*np.identity(mu.shape[0]) # before 25/11/2020: x_sd*np...
+        if type(sig_xgivenz) == float:
+            x_sd = sig_xgivenz
+            Sigma = x_sd**2*np.identity(mu.shape[0])
+        if verbose and i == 0:
+            print('mu='+str(mu)+'\nSigma_{00}='+str(Sigma[0,0]))
         X[i,:] = np.random.multivariate_normal(mu, Sigma, 1)
     assert X.shape == (n, p)
 
@@ -104,7 +110,7 @@ def get_dlvm_params(z, V, W, a, b, alpha, beta):
     hu = (W.dot(z) + a).reshape(-1, 1) # same shape as a (not h)
     mu = (V.dot(np.tanh(hu)) + b).reshape(-1, )
     sig = np.exp(alpha.transpose().dot(np.tanh(hu)) + beta)
-    Sigma = sig*np.identity(mu.shape[0])
+    Sigma = sig**2*np.identity(mu.shape[0]) # before 25/11/2020: sig*np....
 
     return mu, Sigma
 
