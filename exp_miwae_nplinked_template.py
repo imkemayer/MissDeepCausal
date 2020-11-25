@@ -51,7 +51,7 @@ flags.DEFINE_float('d_over_p', None, 'Ratio of d over p.')
 flags.DEFINE_multi_integer('d_latent', None, 'Dimension of latent space (specify either `d_over_p` or `d`).')
 flags.DEFINE_float('mu_z', None, 'Expectation of distribution on Z.')
 flags.DEFINE_float('sig_z', None, 'Variance of distribution on Z.')
-flags.DEFINE_enum('sig_xgivenz', None, ['fixed', 'random'],'Fixed or random variance for X|Z=z, can be `fixed` or `random`')
+flags.DEFINE_float('sig_xgivenz', None, 'Fixed or random variance for X|Z=z, can be `fixed` or `random`')
 
 flags.DEFINE_integer('miwae_d_offset', None,
                      'proxy of dim. of latent space given by d + offset.')
@@ -151,7 +151,7 @@ def main(unused_argv):
              'regularize': row['regularize'] == 'True',
              'seed': int(row['seed']),
              'd': int(row['d']),
-             'sig_xgivenz': int(row['sig_xgivenz'])
+             'sig_xgivenz': float(row['sig_xgivenz'])
           }))
   logging.info('Previous runs')
   logging.info(previous_runs)
