@@ -1,0 +1,2 @@
+model_checkpoint_path: "dlvm__sigXgivenZ0.001_n1000_p10_d1_ysnr5.0_xsnr2.0_propNA0.0_seed1_dmiwae1_sigprior1.0"
+all_model_checkpoint_paths: "dlvm__sigXgivenZ0.001_n1000_p10_d1_ysnr5.0_xsnr2.0_propNA0.0_seed1_dmiwae1_sigprior1.0"

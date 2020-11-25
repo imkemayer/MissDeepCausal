@@ -51,7 +51,7 @@ flags.DEFINE_float('d_over_p', None, 'Ratio of d over p.')
 flags.DEFINE_multi_integer('d_latent', None, 'Dimension of latent space (specify either `d_over_p` or `d`).')
 flags.DEFINE_float('mu_z', None, 'Expectation of distribution on Z.')
 flags.DEFINE_float('sig_z', None, 'Variance of distribution on Z.')
-flags.DEFINE_float('sig_xgivenz', None, 'Fixed or random variance for X|Z=z, can be `fixed` or `random`')
+flags.DEFINE_float('sig_xgivenz', None, 'Value of fixed variance for X|Z=z, must be positive')
 
 flags.DEFINE_integer('miwae_d_offset', None,
                      'proxy of dim. of latent space given by d + offset.')
@@ -96,7 +96,7 @@ def main(unused_argv):
      'x_snr': [2.] if FLAGS.x_snr is None else [FLAGS.x_snr],
      'mu_z': [0.] if FLAGS.mu_z is None else [FLAGS.mu_z],
      'sig_z': [1.] if FLAGS.sig_z is None else [FLAGS.sig_z],
-     'sig_xgivenz': [0.001, ] if FLAGS.sig_xgivenz is None else [FLAGS.sig_xgivenz],
+     'sig_xgivenz': [0.001] if FLAGS.sig_xgivenz is None else [FLAGS.sig_xgivenz],
      'prop_miss': [0.0,] if FLAGS.prop_miss is None else [FLAGS.prop_miss],
      'regularize': [False] if FLAGS.regularize is None else [FLAGS.regularize],
      'seed': np.arange(FLAGS.n_seeds),
@@ -207,7 +207,7 @@ def main(unused_argv):
           mdc_arg['mu_prior']=args['mu_z']
           session_file = './sessions/' + \
                               args['model'] + '_'+ \
-                              args['sig_xgivenz'] + 'Sigma'+ \
+                              '_sigXgivenZ' + str(args['sig_xgivenz']) + \
                               '_n' + str(args['n']) + \
                               '_p' + str(args['p']) + \
                               '_d' + str(args['d']) + \
@@ -280,7 +280,7 @@ def main(unused_argv):
                                                       mu_z=args['mu_z'],
                                                       sig_z=args['sig_z'],
                                                       x_snr=args['x_snr'],
-                                                      sig_xgivenz='fixed')
+                                                      sig_xgivenz=args['sig_xgivenz'])
 
               X_miss_test = ampute(X_test, prop_miss = args['prop_miss'], seed = args['seed'])
               mask_test = np.isfinite(X_miss_test) # binary mask that indicates which values are missing

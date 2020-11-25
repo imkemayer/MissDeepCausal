@@ -1,0 +1,48 @@
+I1125 17:16:36.092601 4437143040 exp_miwae_nplinked_template.py:127] ********************
+I1125 17:16:36.092743 4437143040 exp_miwae_nplinked_template.py:128] Starting exp: test_local01
+I1125 17:16:36.092794 4437143040 exp_miwae_nplinked_template.py:129] ********************
+I1125 17:16:36.092937 4437143040 exp_miwae_nplinked_template.py:156] Previous runs
+I1125 17:16:36.092983 4437143040 exp_miwae_nplinked_template.py:157] set()
+I1125 17:16:36.093040 4437143040 exp_miwae_nplinked_template.py:178] running exp with {'model': 'dlvm', 'citcio': False, 'p': 10, 'y_snr': 5.0, 'x_snr': 2.0, 'mu_z': 0.0, 'sig_z': 1.0, 'sig_xgivenz': 0.001, 'prop_miss': 0.0, 'regularize': False, 'seed': 0, 'n': 1000, 'd': 1}
+W1125 17:16:36.206533 4437143040 deprecation_wrapper.py:119] From exp_miwae_nplinked_template.py:223: The name tf.Session is deprecated. Please use tf.compat.v1.Session instead.
+
+W1125 17:16:36.206799 4437143040 deprecation_wrapper.py:119] From exp_miwae_nplinked_template.py:223: The name tf.reset_default_graph is deprecated. Please use tf.compat.v1.reset_default_graph instead.
+
+W1125 17:16:36.217501 4437143040 deprecation_wrapper.py:119] From /Users/imke/Documents/TraumaMatrix/CausalInference/Simulations/MissDeepCausal/miwae.py:187: The name tf.set_random_seed is deprecated. Please use tf.compat.v1.set_random_seed instead.
+
+W1125 17:16:36.217763 4437143040 deprecation_wrapper.py:119] From /Users/imke/Documents/TraumaMatrix/CausalInference/Simulations/MissDeepCausal/miwae.py:215: The name tf.placeholder is deprecated. Please use tf.compat.v1.placeholder instead.
+
+W1125 17:16:36.443099 4437143040 deprecation.py:323] From /Users/imke/opt/anaconda3/envs/mdc/lib/python3.7/site-packages/tensorflow/python/ops/math_ops.py:2403: add_dispatch_support.<locals>.wrapper (from tensorflow.python.ops.array_ops) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use tf.where in 2.0, which has the same broadcast rule as np.where
+W1125 17:16:36.447891 4437143040 deprecation_wrapper.py:119] From /Users/imke/Documents/TraumaMatrix/CausalInference/Simulations/MissDeepCausal/miwae.py:278: The name tf.log is deprecated. Please use tf.math.log instead.
+
+W1125 17:16:36.449203 4437143040 deprecation_wrapper.py:119] From /Users/imke/Documents/TraumaMatrix/CausalInference/Simulations/MissDeepCausal/miwae.py:279: The name tf.train.AdamOptimizer is deprecated. Please use tf.compat.v1.train.AdamOptimizer instead.
+
+W1125 17:16:37.070621 4437143040 deprecation_wrapper.py:119] From /Users/imke/Documents/TraumaMatrix/CausalInference/Simulations/MissDeepCausal/miwae.py:318: The name tf.train.Saver is deprecated. Please use tf.compat.v1.train.Saver instead.
+
+I1125 17:16:37.872580 4437143040 miwae.py:361] Epoch 2
+I1125 17:16:37.872941 4437143040 miwae.py:362] MIWAE likelihood bound [-24.321152]
+I1125 17:17:08.001941 4437143040 miwae.py:385] ----- miwae training done -----
+W1125 17:17:08.002726 4437143040 deprecation_wrapper.py:119] From exp_miwae_nplinked_template.py:239: The name tf.train.import_meta_graph is deprecated. Please use tf.compat.v1.train.import_meta_graph instead.
+
+W1125 17:17:08.234757 4437143040 deprecation.py:323] From /Users/imke/opt/anaconda3/envs/mdc/lib/python3.7/site-packages/tensorflow/python/training/saver.py:1276: checkpoint_exists (from tensorflow.python.training.checkpoint_management) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use standard file APIs to check for files with this prefix.
+I1125 17:17:08.237638 4437143040 saver.py:1280] Restoring parameters from ./sessions/dlvm__sigXgivenZ0.001_n1000_p10_d1_ysnr5.0_xsnr2.0_propNA0.0_seed0_dmiwae1_sigprior1.0
+I1125 17:17:45.753514 4437143040 exp_miwae_nplinked_template.py:348] ........... DONE
+I1125 17:17:45.753675 4437143040 exp_miwae_nplinked_template.py:349] in 69.66064095497131 s 
+
+
+I1125 17:17:45.753792 4437143040 exp_miwae_nplinked_template.py:178] running exp with {'model': 'dlvm', 'citcio': False, 'p': 10, 'y_snr': 5.0, 'x_snr': 2.0, 'mu_z': 0.0, 'sig_z': 1.0, 'sig_xgivenz': 0.001, 'prop_miss': 0.0, 'regularize': False, 'seed': 1, 'n': 1000, 'd': 1}
+I1125 17:17:47.556717 4437143040 miwae.py:361] Epoch 2
+I1125 17:17:47.557058 4437143040 miwae.py:362] MIWAE likelihood bound [-24.691296]
+I1125 17:18:22.514977 4437143040 miwae.py:385] ----- miwae training done -----
+I1125 17:18:22.874590 4437143040 saver.py:1280] Restoring parameters from ./sessions/dlvm__sigXgivenZ0.001_n1000_p10_d1_ysnr5.0_xsnr2.0_propNA0.0_seed1_dmiwae1_sigprior1.0
+I1125 17:18:57.697649 4437143040 exp_miwae_nplinked_template.py:348] ........... DONE
+I1125 17:18:57.697926 4437143040 exp_miwae_nplinked_template.py:349] in 71.94414401054382 s 
+
+
+I1125 17:18:57.698062 4437143040 exp_miwae_nplinked_template.py:178] running exp with {'model': 'dlvm', 'citcio': False, 'p': 50, 'y_snr': 5.0, 'x_snr': 2.0, 'mu_z': 0.0, 'sig_z': 1.0, 'sig_xgivenz': 0.001, 'prop_miss': 0.0, 'regularize': False, 'seed': 0, 'n': 5000, 'd': 1}
+I1125 17:19:05.778853 4437143040 miwae.py:361] Epoch 2
+I1125 17:19:05.779655 4437143040 miwae.py:362] MIWAE likelihood bound [-67.0755]
