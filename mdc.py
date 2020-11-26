@@ -5,6 +5,15 @@ from sklearn.experimental import enable_iterative_imputer
 from sklearn.impute import IterativeImputer
 from sklearn.impute import SimpleImputer
 
+import tensorflow as tf
+import tensorflow_probability as tfp
+tfd = tfp.distributions
+
+import os.path
+import glob
+import pickle
+
+
 from estimators import compute_estimates
 from generate_data import gen_lrmf, gen_dlvm, ampute
 from miwae import miwae_es
@@ -93,20 +102,51 @@ def exp_mi(xmiss, w, y, regularize, m=10, nuisance=False):
 
 def exp_mdc(xmiss, w, y,
             d_miwae,
+            mu_prior,
             sig_prior,
             num_samples_zmul,
             learning_rate,
             n_epochs,
             regularize,
             nuisance=False,
-            return_zhat=False):
+            return_zhat=False,
+            save_session=False,
+            session_file=None,
+            session_file_complete=None):
 
     tau = dict()
     nu = dict()
+    epochs=-1
+    xhat = []
+    zhat = []
+    zhat_mul = []
+    elbo = None
+    epochs = None
+    if session_file_complete is not None:
+        tmp = glob.glob(session_file_complete+'.*')
+        sess = tf.Session(graph=tf.reset_default_graph())
+        if len(tmp)>0:
+            new_saver = tf.train.import_meta_graph(session_file_complete + '.meta')
+            new_saver.restore(sess, session_file_complete)
+            with open(session_file_complete+'.pkl', 'rb') as f:
+                xhat, zhat, zhat_mul, elbo, epochs = pickle.load(f)
+    if session_file_complete is None or len(tmp)==0:
+        xhat, zhat, zhat_mul, elbo, epochs = miwae_es(xmiss,
+                                                      d_miwae=d_miwae,
+                                                      mu_prior=mu_prior,
+                                                      sig_prior=sig_prior,
+                                                      num_samples_zmul=num_samples_zmul,
+                                                      l_rate=learning_rate,
+                                                      n_epochs=n_epochs,
+                                                      save_session=save_session,
+                                                      session_file=session_file)
+        if session_file_complete is not None:
+            new_saver = tf.train.import_meta_graph(session_file_complete + '.meta')
+            new_saver.restore(sess, session_file_complete)#tf.train.latest_checkpoint('./'))
+            with open(session_file_complete + '.pkl', 'wb') as file_data:  # Python 3: open(..., 'wb')
+                pickle.dump([xhat, zhat, zhat_mul, elbo, epochs], file_data)
 
-    xhat, zhat, zhat_mul, elbo, _ = miwae_es(xmiss, d_miwae=d_miwae, sig_prior=sig_prior,
-                                          num_samples_zmul=num_samples_zmul,
-                                          l_rate=learning_rate, n_epochs=n_epochs)
+
     # Tau estimated on Zhat=E[Z|X]
     if nuisance:
         tau['MDC.process'], nu['MDC.process'] = compute_estimates(zhat, w, y, regularize, nuisance)

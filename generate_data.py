@@ -35,8 +35,9 @@ def gen_nonlin_copies(n=1000, d=3, p=100, tau=1, link="linear",
 # Low rank matrix factorization
 def gen_lrmf(n = 1000, d = 3, p = 100, tau = 1, link = "linear",
              citcio = False, prop_miss = 0,
-             seed = 0, x_snr = 2., y_snr = 2.):
-    x_sd = 1./(x_snr * np.sqrt(n*p))
+             seed = 0, x_snr = 2., y_snr = 2., sig_xgivenz=0.01):
+    #x_sd = 1./(x_snr * np.sqrt(n*p))
+    x_sd=sig_xgivenz
     # V is fixed throughout replications for given fixed n, p, d
     np.random.seed(0)
     V = np.random.randn(p, d)
